@@ -1,0 +1,12 @@
+{
+    "GENERAL": {
+        "target": "SOC",
+        "sen_bus_id": []
+    },
+    "METRICS": {
+        "general": {
+            "enable": false,
+            "port": 8082
+        }
+    }
+}
