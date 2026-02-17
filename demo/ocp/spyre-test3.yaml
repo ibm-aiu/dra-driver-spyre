@@ -1,0 +1,137 @@
+# Single pod, single container
+# Request same-numa Spyre
+# cel deviceCode to avoid vf
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spyre-test3
+---
+apiVersion: resource.k8s.io/v1beta1
+kind: ResourceClaimTemplate
+metadata:
+  namespace: spyre-test3
+  name: 2-topo-aware-spyre-template
+spec:
+  spec:
+    devices:
+      requests:
+      - name: spyre
+        deviceClassName: spyre.ibm.com
+        allocationMode: ExactCount
+        count: 2
+        selectors:
+        - cel:
+            expression: |-
+              device.attributes["spyre.ibm.com"].deviceCode == "06a7"
+      constraints:
+      - requests: ["spyre"]
+        matchAttribute: "spyre.ibm.com/numaInfo"
+---
+apiVersion: resource.k8s.io/v1beta1
+kind: ResourceClaimTemplate
+metadata:
+  namespace: spyre-test3
+  name: 3-topo-aware-spyre-template
+spec:
+  spec:
+    devices:
+      requests:
+      - name: spyre
+        deviceClassName: spyre.ibm.com
+        allocationMode: ExactCount
+        count: 3
+        selectors:
+        - cel:
+            expression: |-
+              device.attributes["spyre.ibm.com"].deviceCode == "06a7"
+      constraints:
+      - requests: ["spyre"]
+        matchAttribute: "spyre.ibm.com/numaInfo"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: spyre-test3
+  name: pod0
+  labels:
+    app: pod
+spec:
+  containers:
+  - name: ctr0
+    image: ubuntu:22.04
+    command: ["bash", "-c"]
+    args: ["export; sleep 9999"]
+    resources:
+      claims:
+      - name: spyre
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+  nodeSelector:
+    kubernetes.io/hostname: dra418-8r6hd-worker-1-bn4fq
+  resourceClaims:
+  - name: spyre
+    resourceClaimTemplateName: 2-topo-aware-spyre-template
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: spyre-test3
+  name: pod1
+  labels:
+    app: pod
+spec:
+  containers:
+  - name: ctr0
+    image: ubuntu:22.04
+    command: ["bash", "-c"]
+    args: ["export; sleep 9999"]
+    resources:
+      claims:
+      - name: spyre
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+  nodeSelector:
+    kubernetes.io/hostname: dra418-8r6hd-worker-1-bn4fq
+  resourceClaims:
+  - name: spyre
+    resourceClaimTemplateName: 3-topo-aware-spyre-template
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: spyre-test3
+  name: pod2
+  labels:
+    app: pod
+spec:
+  containers:
+  - name: ctr0
+    image: ubuntu:22.04
+    command: ["bash", "-c"]
+    args: ["export; sleep 9999"]
+    resources:
+      claims:
+      - name: spyre
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+  nodeSelector:
+    kubernetes.io/hostname: dra418-8r6hd-worker-1-bn4fq
+  resourceClaims:
+  - name: spyre
+    resourceClaimTemplateName: 3-topo-aware-spyre-template
