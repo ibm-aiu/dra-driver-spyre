@@ -1,0 +1,39 @@
+# +-------------------------------------------------------------------+
+# | Copyright IBM Corp. 2025 All Rights Reserved                      |
+# | PID 5698-SPR                                                      |
+# +-------------------------------------------------------------------+
+
+name: Perform E2E Test
+
+on:
+  workflow_call:
+
+permissions: read-all
+
+jobs:
+  e2e-test:
+    env:
+      DOCKER: docker
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-go@v6
+      with:
+        go-version: '1.24.13'
+    - name: Create kind cluster
+      id: kind
+      uses: helm/kind-action@v1
+      with:
+        config: ./hack/kind/kind-cluster-config.yaml
+        node_image: kindest/node:v1.33.0
+        cluster_name: dra-driver-spyre-cluster
+        registry: false
+    - name: Build driver image
+      run: make docker-build
+    - name: Load driver image
+      run: make load-driver
+    - name: Deploy driver
+      shell: sh
+      run: make deploy-driver
+    - name: Run e2e test
+      run: make e2e-test
