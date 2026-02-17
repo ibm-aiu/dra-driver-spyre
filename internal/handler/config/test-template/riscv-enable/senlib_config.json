@@ -1,0 +1,17 @@
+{
+    "GENERAL": {
+        "target": "SOC",
+        "sen_bus_id": []
+    },
+    "METRICS": {
+        "general": {
+            "enable": false,
+            "port": 8000
+        }
+    },
+    "RISCV": {
+      "DOOM": {
+        "enable": true
+      }
+    }
+}
