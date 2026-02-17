@@ -1,0 +1,13 @@
+{
+    "GENERAL": {
+        "target": "SOC",
+        "sen_bus_id": []
+    },
+    "METRICS": {
+        "general": {
+            "enable": false,
+            "path": "./sentientmap",
+            "port": 8000
+        }
+    }
+}
