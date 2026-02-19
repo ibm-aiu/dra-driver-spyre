@@ -153,12 +153,12 @@ func RunPlugin(ctx context.Context, config *flags.Config) error {
 	if err := ctx.Err(); err != nil && !errors.Is(err, context.Canceled) {
 		// A canceled context is the normal case here when the process receives
 		// a signal. Only log the error for more interesting cases.
-		logger.Error(err, "error from context")
+		logger.Error(err, "Error from context")
 	}
 
 	err = driver.Shutdown(logger)
 	if err != nil {
-		logger.Error(err, "Unable to cleanly shutdown driver")
+		logger.Error(err, "Unable to cleanly shutdown the driver")
 	}
 
 	return nil
