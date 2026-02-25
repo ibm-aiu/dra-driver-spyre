@@ -1,0 +1,81 @@
+# Single pod, single container
+# Request specific Spyre
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spyre-test2
+---
+apiVersion: resource.k8s.io/v1beta1
+kind: ResourceClaimTemplate
+metadata:
+  namespace: spyre-test2
+  name: specified-spyre-template
+spec:
+  spec:
+    devices:
+      requests:
+      - name: spyre
+        deviceClassName: spyre.ibm.com
+        selectors:
+        - cel:
+            expression: |-
+              device.attributes["spyre.ibm.com"].pciAddress == "0000:1a:00.0"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: spyre-test2
+  name: pod0
+  labels:
+    app: pod
+spec:
+  containers:
+  - name: ctr0
+    image: ubuntu:22.04
+    command: ["bash", "-c"]
+    args: ["export; sleep 9999"]
+    resources:
+      claims:
+      - name: spyre
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+  nodeSelector:
+    kubernetes.io/hostname: dra418-8r6hd-worker-1-bn4fq
+  resourceClaims:
+  - name: spyre
+    resourceClaimTemplateName: specified-spyre-template
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: spyre-test2
+  name: pod1
+  labels:
+    app: pod
+spec:
+  containers:
+  - name: ctr0
+    image: ubuntu:22.04
+    command: ["bash", "-c"]
+    args: ["export; sleep 9999"]
+    resources:
+      claims:
+      - name: spyre
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+  nodeSelector:
+    kubernetes.io/hostname: dra418-8r6hd-worker-1-bn4fq
+  resourceClaims:
+  - name: spyre
+    resourceClaimTemplateName: specified-spyre-template

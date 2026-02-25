@@ -1,0 +1,23 @@
+# +-------------------------------------------------------------------+
+# | (C) Copyright IBM Corp.  2025,2026 All Rights Reserved                      |
+# | SPDX-License-Identifier: Apache-2.0.                              |
+# +-------------------------------------------------------------------+
+
+name: Pull Request Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions: read-all
+
+jobs:
+  pre-commit:
+    uses: ibm-aiu/dra-driver-spyre/.github/workflows/pre-commit.yaml@main
+  unit-test:
+    needs: pre-commit
+    uses: ibm-aiu/dra-driver-spyre/.github/workflows/unit-test.yaml@main
+  e2e-test:
+    needs: unit-test
+    if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
+    uses: ibm-aiu/dra-driver-spyre/.github/workflows/e2e-test-kind.yaml@main

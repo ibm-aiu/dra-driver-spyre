@@ -1,0 +1,24 @@
+# +-------------------------------------------------------------------+
+# | (C) Copyright IBM Corp.  2025,2026 All Rights Reserved                      |
+# | SPDX-License-Identifier: Apache-2.0.                              |
+# +-------------------------------------------------------------------+
+
+name: Perform Unit Test
+
+on:
+  workflow_call:
+
+permissions: read-all
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-go@v6
+      with:
+        go-version: '1.24.13'
+    - name: Run unit test
+      run: make test
+    - name: Run build test
+      run: make build

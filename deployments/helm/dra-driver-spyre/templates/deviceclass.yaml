@@ -1,0 +1,8 @@
+apiVersion: resource.k8s.io/v1beta1
+kind: DeviceClass
+metadata:
+  name: spyre.ibm.com
+spec:
+  selectors:
+  - cel:
+      expression: "device.driver == 'spyre.ibm.com'"

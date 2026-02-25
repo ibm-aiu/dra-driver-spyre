@@ -1,0 +1,243 @@
+#############################
+## Generated ResourceSlice ##
+#############################
+
+apiVersion: resource.k8s.io/v1beta1
+kind: ResourceSlice
+metadata:
+  creationTimestamp: "2025-08-13T06:31:39Z"
+  generateName: dra-example-driver-cluster-worker-spyre.ibm.com-
+  generation: 1
+  name: dra-example-driver-cluster-worker-spyre.ibm.com-k6wcv
+  ownerReferences:
+  - apiVersion: v1
+    controller: true
+    kind: Node
+    name: dra-example-driver-cluster-worker
+    uid: 0647d306-86ce-4306-ba15-3d972c260f7f
+  resourceVersion: "18791"
+  uid: bcee7faf-91af-4cb6-b960-61b0e709606d
+spec:
+  devices:
+  - basic:
+      attributes:
+        driver:
+          string: vfio-pci
+        driverVersion:
+          string: 0.0.1
+        index:
+          int: 3
+        isPf:
+          bool: false
+        linkSpeed:
+          string: 20.0 GB/s
+        numaInfo:
+          string: "0"
+        pciAddress:
+          string: 0000:1e:00.0
+        pfPciAddress:
+          string: "0"
+        productId:
+          string: 06a7
+        subClass:
+          string: "0"
+        vendor:
+          string: "1014"
+        vfId:
+          int: 0
+    name: 0000-1e-00-0
+  - basic:
+      attributes:
+        driver:
+          string: vfio-pci
+        driverVersion:
+          string: 0.0.1
+        index:
+          int: 4
+        isPf:
+          bool: false
+        linkSpeed:
+          string: 20.0 GB/s
+        numaInfo:
+          string: "1"
+        pciAddress:
+          string: 0000:3d:00.0
+        pfPciAddress:
+          string: "0"
+        productId:
+          string: 06a7
+        subClass:
+          string: "0"
+        vendor:
+          string: "1014"
+        vfId:
+          int: 0
+    name: 0000-3d-00-0
+  - basic:
+      attributes:
+        driver:
+          string: vfio-pci
+        driverVersion:
+          string: 0.0.1
+        index:
+          int: 5
+        isPf:
+          bool: false
+        linkSpeed:
+          string: 20.0 GB/s
+        numaInfo:
+          string: "1"
+        pciAddress:
+          string: 0000:3f:00.0
+        pfPciAddress:
+          string: "0"
+        productId:
+          string: 06a7
+        subClass:
+          string: "0"
+        vendor:
+          string: "1014"
+        vfId:
+          int: 0
+    name: 0000-3f-00-0
+  - basic:
+      attributes:
+        driver:
+          string: vfio-pci
+        driverVersion:
+          string: 0.0.1
+        index:
+          int: 6
+        isPf:
+          bool: false
+        linkSpeed:
+          string: 20.0 GB/s
+        numaInfo:
+          string: "1"
+        pciAddress:
+          string: "0000:40:00.0"
+        pfPciAddress:
+          string: "0"
+        productId:
+          string: 06a7
+        subClass:
+          string: "0"
+        vendor:
+          string: "1014"
+        vfId:
+          int: 0
+    name: 0000-40-00-0
+  - basic:
+      attributes:
+        driver:
+          string: vfio-pci
+        driverVersion:
+          string: 0.0.1
+        index:
+          int: 7
+        isPf:
+          bool: false
+        linkSpeed:
+          string: 20.0 GB/s
+        numaInfo:
+          string: "1"
+        pciAddress:
+          string: "0000:41:00.0"
+        pfPciAddress:
+          string: "0"
+        productId:
+          string: 06a7
+        subClass:
+          string: "0"
+        vendor:
+          string: "1014"
+        vfId:
+          int: 0
+    name: 0000-41-00-0
+  - basic:
+      attributes:
+        driver:
+          string: vfio-pci
+        driverVersion:
+          string: 0.0.1
+        index:
+          int: 0
+        isPf:
+          bool: false
+        linkSpeed:
+          string: 20.0 GB/s
+        numaInfo:
+          string: "0"
+        pciAddress:
+          string: 0000:1a:00.0
+        pfPciAddress:
+          string: "0"
+        productId:
+          string: 06a7
+        subClass:
+          string: "0"
+        vendor:
+          string: "1014"
+        vfId:
+          int: 0
+    name: 0000-1a-00-0
+  - basic:
+      attributes:
+        driver:
+          string: vfio-pci
+        driverVersion:
+          string: 0.0.1
+        index:
+          int: 1
+        isPf:
+          bool: false
+        linkSpeed:
+          string: 20.0 GB/s
+        numaInfo:
+          string: "0"
+        pciAddress:
+          string: 0000:1c:00.0
+        pfPciAddress:
+          string: "0"
+        productId:
+          string: 06a7
+        subClass:
+          string: "0"
+        vendor:
+          string: "1014"
+        vfId:
+          int: 0
+    name: 0000-1c-00-0
+  - basic:
+      attributes:
+        driver:
+          string: vfio-pci
+        driverVersion:
+          string: 0.0.1
+        index:
+          int: 2
+        isPf:
+          bool: false
+        linkSpeed:
+          string: 20.0 GB/s
+        numaInfo:
+          string: "0"
+        pciAddress:
+          string: 0000:1d:00.0
+        pfPciAddress:
+          string: "0"
+        productId:
+          string: 06a7
+        subClass:
+          string: "0"
+        vendor:
+          string: "1014"
+        vfId:
+          int: 0
+    name: 0000-1d-00-0
+  driver: spyre.ibm.com
+  nodeName: dra-example-driver-cluster-worker
+  pool:
+    generation: 1
+    name: dra-example-driver-cluster-worker
+    resourceSliceCount: 1
