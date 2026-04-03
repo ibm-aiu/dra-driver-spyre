@@ -6,7 +6,7 @@
 name: Ensure Pre-commit
 
 on:
-  workflow_call:
+  workflow_dispatch:
   push:
     branches:
     - main
@@ -15,8 +15,4 @@ permissions: read-all
 
 jobs:
   pre-commit:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-python@v3
-    - uses: pre-commit/action@v3.0.1
+    uses: ibm-aiu/spyre-operator-actions/.github/workflows/pre-commit.yaml@main
