@@ -4,7 +4,7 @@ go 1.24.13
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/jaypipes/ghw v0.23.0
+	github.com/jaypipes/ghw v0.24.0
 	github.com/jaypipes/pcidb v1.1.1
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
