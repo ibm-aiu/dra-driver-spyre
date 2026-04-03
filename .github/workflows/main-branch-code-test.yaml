@@ -27,7 +27,7 @@ permissions: read-all
 
 jobs:
   unit-test:
-    uses: ibm-aiu/dra-driver-spyre/.github/workflows/unit-test.yaml@main
+    uses: ibm-aiu/spyre-operator-actions/.github/workflows/unit-test.yaml@main
   e2e-test-kind:
     needs: unit-test
     uses: ibm-aiu/dra-driver-spyre/.github/workflows/e2e-test-kind.yaml@main
