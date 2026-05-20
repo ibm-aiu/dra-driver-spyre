@@ -7,6 +7,12 @@ name: Perform E2E Test
 
 on:
   workflow_call:
+    inputs:
+      node_image:
+        description: 'Kind node image'
+        required: false
+        type: string
+        default: 'kindest/node:v1.33.0'
 
 permissions: read-all
 
@@ -25,7 +31,7 @@ jobs:
       uses: helm/kind-action@v1
       with:
         config: ./hack/kind/kind-cluster-config.yaml
-        node_image: kindest/node:v1.33.0
+        node_image: ${{ inputs.node_image }}
         cluster_name: dra-driver-spyre-cluster
         registry: false
     - name: Build driver image
