@@ -27,7 +27,7 @@ var _ = Describe("main functions", func() {
 		Expect(len(allocatableDevices)).To(Equal(8))
 		numaCount := make(map[string]int)
 		for _, device := range allocatableDevices {
-			attrs := device.Basic.Attributes
+			attrs := device.Attributes
 			numa := attrs["numaInfo"]
 			numaCount[*numa.StringValue] += 1
 		}

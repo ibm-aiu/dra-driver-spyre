@@ -35,11 +35,9 @@ func (d PseudoPciDevice) GetPciAddr() string {
 
 func (d PseudoPciDevice) GetAPIDevice() *pluginapi.Device {
 	v := &pluginapi.Device{
-		ID:                   d.PciAddress,
-		Health:               "Healthy",
-		Topology:             nil,
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_sizecache:        0,
+		ID:       d.PciAddress,
+		Health:   "Healthy",
+		Topology: nil,
 	}
 	return v
 }

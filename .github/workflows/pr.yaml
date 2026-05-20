@@ -11,6 +11,9 @@ on:
 
 permissions: read-all
 
+env:
+  GOTOOLCHAIN: auto
+
 jobs:
   pre-commit:
     uses: ibm-aiu/spyre-operator-actions/.github/workflows/pre-commit.yaml@main
@@ -21,3 +24,5 @@ jobs:
     needs: unit-test
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     uses: ibm-aiu/dra-driver-spyre/.github/workflows/e2e-test-kind.yaml@main
+    with:
+      node_image: kindest/node:v1.34.0

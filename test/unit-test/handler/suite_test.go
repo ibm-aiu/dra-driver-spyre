@@ -22,7 +22,6 @@ import (
 	. "github.com/ibm-aiu/dra-driver-spyre/internal/handler"
 	conf "github.com/ibm-aiu/dra-driver-spyre/internal/handler/config"
 	cst "github.com/ibm-aiu/dra-driver-spyre/pkg/const"
-	"github.com/ibm-aiu/dra-driver-spyre/pkg/flags"
 	flgs "github.com/ibm-aiu/dra-driver-spyre/pkg/flags"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -50,13 +49,13 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Device Handler Suite")
 }
 
-func newConfig(cfg *rest.Config) *flags.Config {
+func newConfig(cfg *rest.Config) *flgs.Config {
 	var err error
 	CDIRoot, err = os.MkdirTemp("", "cdiroot")
 	Expect(err).To(BeNil())
 	coreclient, err := coreclientset.NewForConfig(cfg)
 	Expect(err).To(BeNil())
-	flags := &flags.Flags{
+	flags := &flgs.Flags{
 		LoggingConfig: flgs.NewLoggingConfig(),
 		CDIRoot:       CDIRoot,
 	}
