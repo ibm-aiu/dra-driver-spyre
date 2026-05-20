@@ -7,8 +7,12 @@ MAKEFILE_PATH		:= $(abspath $(lastword $(MAKEFILE_LIST)))
 REPO_ROOT 			:= $(abspath $(patsubst %/,%,$(dir $(MAKEFILE_PATH))))
 
 # Go variables
-GOLANG_VERSION		?= $(shell cd $(REPO_ROOT) && go list -f {{.GoVersion}} -m)
-GOTOOLCHAIN			?= go1.24.13
+GOLANG_VERSION		?= 1.25.10
+GOTOOLCHAIN			?= go1.25.10
+GO					?= GOTOOLCHAIN=$(GOTOOLCHAIN) go
+
+# Export Go toolchain to ensure consistent version
+export GOTOOLCHAIN
 
 # Image variables
 ## Ensure REGISTRY is updated to your registry before pushing an image.
@@ -18,7 +22,7 @@ DOCKER				?= $(shell command -v podman 2> /dev/null || echo docker)
 DOCKERFILE			= $(REPO_ROOT)/Dockerfile
 DOCKER_BUILD_OPTS	?= --progress=plain
 DRIVER_NAME 		?= dra-driver-spyre
-BUILDER_IMAGE		?= registry.access.redhat.com/ubi9/go-toolset:1.24.6-1758501173
+BUILDER_IMAGE		?= registry.access.redhat.com/ubi9/go-toolset:1.25.9-1778675823 # Latest UBI image with Go 1.25
 MODULE				:= github.com/ibm-aiu/$(DRIVER_NAME)
 IMAGE_NAME			=  $(REGISTRY)/$(DRIVER_NAME)
 IMAGE_TAG			?= $(VERSION)
@@ -68,10 +72,10 @@ HELM			?= $(LOCALBIN)/helm
 LOGCHECK		?= $(LOCALBIN)/logcheck
 
 ## Tool Versions
-CONTROLLER_TOOLS_VERSION 	?= v0.15.0
-ENVTEST_K8S_VERSION			= 1.33
-GINKGO_VERSION 				?= v2.28.1
-GOLANGCI_LINT_VERSION 		?= 1.64.8
+CONTROLLER_TOOLS_VERSION 	?= v0.22.0
+ENVTEST_K8S_VERSION			= 1.34
+GINKGO_VERSION 				?= v2.28.3
+GOLANGCI_LINT_VERSION 		?= 2.4.0
 YQ_VERSION 					?= v4.29.2
 HELM_VERSION				?= v4.0.0
 LOGCHECK_VERSION 			= 0.7.0
@@ -116,7 +120,7 @@ $(GINKGO):$(LOCALBIN)
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download and install setup-envtest
 $(ENVTEST):$(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20240624150636-162a113134de
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.22
 
 GOLANGCI_LINT_INSTALL_SCRIPT ?= 'https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh'
 .PHONY: golangci-lint
@@ -221,11 +225,11 @@ assert-fmt: ## Ensure that the code is properly formatted
 
 .PHONY: lint
 lint: golangci-lint vendor ## Run golangci-lint against code.
-	$(GOLANGCI_LINT) run --sort-results --config $(REPO_ROOT)/.golangci.yaml --go $(GOLANG_VERSION)
+	$(GOLANGCI_LINT) run --config $(REPO_ROOT)/.golangci.yaml
 
 .PHONY: lint-fix
 lint-fix: golangci-lint vendor ## Run golangci-lint against code.
-	$(GOLANGCI_LINT) run --fix --config $(REPO_ROOT)/.golangci.yaml --go $(GOLANG_VERSION)
+	$(GOLANGCI_LINT) run --fix --config $(REPO_ROOT)/.golangci.yaml
 
 .PHONY: vulcheck
 vulcheck: govulncheck ## Scan for golang vulnerabilities

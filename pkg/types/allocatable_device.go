@@ -21,7 +21,7 @@ import (
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/topology/types/pcitopo"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/utils"
 	"github.com/jaypipes/ghw"
-	resourceapi "k8s.io/api/resource/v1beta1"
+	resourceapi "k8s.io/api/resource/v1"
 	klog "k8s.io/klog/v2"
 )
 
@@ -82,11 +82,9 @@ func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo)
 		attributes := getAttributes(index, device, pciTopo, pseudoNumMap)
 		capacities := getDeviceCapacity(device)
 		resourceDevice := resourceapi.Device{
-			Name: deviceName,
-			Basic: &resourceapi.BasicDevice{
-				Attributes: attributes,
-				Capacity:   capacities,
-			},
+			Name:       deviceName,
+			Attributes: attributes,
+			Capacity:   capacities,
 		}
 		alldevices[deviceName] = SpyreDevice{
 			ProductID: ProductID(device.GetProductID()),

@@ -29,7 +29,6 @@ import (
 	klog "k8s.io/klog/v2"
 
 	"github.com/ibm-aiu/dra-driver-spyre/internal/driver"
-	"github.com/ibm-aiu/dra-driver-spyre/pkg/flags"
 	flgs "github.com/ibm-aiu/dra-driver-spyre/pkg/flags"
 	"k8s.io/dynamic-resource-allocation/kubeletplugin"
 )
@@ -42,7 +41,7 @@ func main() {
 }
 
 func newApp() *cli.App {
-	flags := &flags.Flags{
+	flags := &flgs.Flags{
 		LoggingConfig: flgs.NewLoggingConfig(),
 	}
 	cliFlags := []cli.Flag{
@@ -117,7 +116,7 @@ func newApp() *cli.App {
 	return app
 }
 
-func RunPlugin(ctx context.Context, config *flags.Config) error {
+func RunPlugin(ctx context.Context, config *flgs.Config) error {
 	logger := klog.FromContext(ctx)
 
 	err := os.MkdirAll(config.DriverPluginPath(), 0750)
@@ -140,6 +139,8 @@ func RunPlugin(ctx context.Context, config *flags.Config) error {
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
+	ctx, cancel := context.WithCancelCause(ctx)
+	config.CancelMainCtx = cancel
 
 	driver, err := driver.NewDriver(ctx, config)
 	if err != nil {
@@ -150,7 +151,7 @@ func RunPlugin(ctx context.Context, config *flags.Config) error {
 	// restore default signal behavior as soon as possible in case graceful
 	// shutdown gets stuck.
 	stop()
-	if err := ctx.Err(); err != nil && !errors.Is(err, context.Canceled) {
+	if err := context.Cause(ctx); err != nil && !errors.Is(err, context.Canceled) {
 		// A canceled context is the normal case here when the process receives
 		// a signal. Only log the error for more interesting cases.
 		logger.Error(err, "error from context")

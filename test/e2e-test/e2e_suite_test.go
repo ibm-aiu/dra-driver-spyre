@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -71,7 +71,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).To(BeNil())
 	err = clientgoscheme.AddToScheme(scheme)
 	Expect(err).To(BeNil())
-	err = resourcev1beta1.AddToScheme(scheme)
+	err = resourcev1.AddToScheme(scheme)
 	Expect(err).To(BeNil())
 	err = corev1.AddToScheme(scheme)
 	Expect(err).To(BeNil())

@@ -16,8 +16,10 @@ package driver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	coreclientset "k8s.io/client-go/kubernetes"
 	"k8s.io/dynamic-resource-allocation/kubeletplugin"
 	klog "k8s.io/klog/v2"
@@ -27,7 +29,7 @@ import (
 	cst "github.com/ibm-aiu/dra-driver-spyre/pkg/const"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/flags"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/utils"
-	resourceapi "k8s.io/api/resource/v1beta1"
+	resourceapi "k8s.io/api/resource/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/dynamic-resource-allocation/resourceslice"
 )
@@ -39,6 +41,7 @@ type driver struct {
 	helper      *kubeletplugin.Helper
 	state       *state.DeviceState
 	healthcheck *health.HealthCheck
+	cancelCtx   func(error)
 }
 
 // NewDriver creates a driver with device state and kubelet plugin
@@ -47,7 +50,8 @@ type driver struct {
 // KubeletPlugin publishes resources for generating ResourceSlice.
 func NewDriver(ctx context.Context, config *flags.Config) (*driver, error) {
 	driver := &driver{
-		client: config.Coreclient,
+		client:    config.Coreclient,
+		cancelCtx: config.CancelMainCtx,
 	}
 
 	if utils.IsPseudoDeviceMode() {
@@ -157,4 +161,11 @@ func (d *driver) unprepareResourceClaim(_ context.Context, claim kubeletplugin.N
 		return fmt.Errorf("error unpreparing devices for claim %v: %w", claim.UID, err)
 	}
 	return nil
+}
+
+func (d *driver) HandleError(ctx context.Context, err error, msg string) {
+	utilruntime.HandleErrorWithContext(ctx, err, msg)
+	if !errors.Is(err, kubeletplugin.ErrRecoverable) && d.cancelCtx != nil {
+		d.cancelCtx(fmt.Errorf("fatal background error: %w", err))
+	}
 }

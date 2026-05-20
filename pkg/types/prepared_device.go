@@ -17,7 +17,7 @@
 package types
 
 import (
-	resourceapi "k8s.io/api/resource/v1beta1"
+	resourceapi "k8s.io/api/resource/v1"
 	drapbv1 "k8s.io/kubelet/pkg/apis/dra/v1beta1"
 	"k8s.io/utils/ptr"
 	cdispec "tags.cncf.io/container-device-interface/specs-go"

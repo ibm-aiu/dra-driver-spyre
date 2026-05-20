@@ -28,7 +28,7 @@ import (
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/flags"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/topology"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/types"
-	resourceapi "k8s.io/api/resource/v1beta1"
+	resourceapi "k8s.io/api/resource/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	klog "k8s.io/klog/v2"
 	drapbv1 "k8s.io/kubelet/pkg/apis/dra/v1beta1"
@@ -46,7 +46,7 @@ type DeviceState struct {
 }
 
 func NewDeviceState(config *flags.Config) (*DeviceState, error) {
-	topologyFile := config.DiscoveryConfig.TopologyFilepath
+	topologyFile := config.Flags.DiscoveryConfig.TopologyFilepath
 	if topologyFile == "" {
 		topologyFile = topology.GetTopologyFile()
 	}
