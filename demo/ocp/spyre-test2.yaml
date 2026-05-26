@@ -6,7 +6,7 @@ kind: Namespace
 metadata:
   name: spyre-test2
 ---
-apiVersion: resource.k8s.io/v1beta1
+apiVersion: resource.k8s.io/v1
 kind: ResourceClaimTemplate
 metadata:
   namespace: spyre-test2
@@ -16,7 +16,8 @@ spec:
     devices:
       requests:
       - name: spyre
-        deviceClassName: spyre.ibm.com
+        exactly:
+          deviceClassName: spyre.ibm.com
         selectors:
         - cel:
             expression: |-

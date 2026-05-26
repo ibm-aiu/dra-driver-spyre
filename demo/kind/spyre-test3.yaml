@@ -7,7 +7,7 @@ kind: Namespace
 metadata:
   name: spyre-test3
 ---
-apiVersion: resource.k8s.io/v1beta1
+apiVersion: resource.k8s.io/v1
 kind: ResourceClaimTemplate
 metadata:
   namespace: spyre-test3
@@ -17,18 +17,19 @@ spec:
     devices:
       requests:
       - name: spyre
-        deviceClassName: spyre.ibm.com
-        allocationMode: ExactCount
-        count: 2
-        selectors:
-        - cel:
-            expression: |-
-              device.attributes["spyre.ibm.com"].productId == "06a7"
+        exactly:
+          deviceClassName: spyre.ibm.com
+          allocationMode: ExactCount
+          count: 2
+          selectors:
+          - cel:
+              expression: |-
+                device.attributes["spyre.ibm.com"].productId == "06a7"
       constraints:
       - requests: ["spyre"]
         matchAttribute: "spyre.ibm.com/numaInfo"
 ---
-apiVersion: resource.k8s.io/v1beta1
+apiVersion: resource.k8s.io/v1
 kind: ResourceClaimTemplate
 metadata:
   namespace: spyre-test3
@@ -38,13 +39,14 @@ spec:
     devices:
       requests:
       - name: spyre
-        deviceClassName: spyre.ibm.com
-        allocationMode: ExactCount
-        count: 3
-        selectors:
-        - cel:
-            expression: |-
-              device.attributes["spyre.ibm.com"].productId == "06a7"
+        exactly:
+          deviceClassName: spyre.ibm.com
+          allocationMode: ExactCount
+          count: 3
+          selectors:
+          - cel:
+              expression: |-
+                device.attributes["spyre.ibm.com"].productId == "06a7"
       constraints:
       - requests: ["spyre"]
         matchAttribute: "spyre.ibm.com/numaInfo"

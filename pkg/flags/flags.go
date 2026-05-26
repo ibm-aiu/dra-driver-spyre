@@ -34,8 +34,9 @@ type Flags struct {
 }
 
 type Config struct {
-	*Flags
-	Coreclient coreclientset.Interface
+	Flags         *Flags
+	Coreclient    coreclientset.Interface
+	CancelMainCtx func(error)
 }
 
 func (c Config) DriverPluginPath() string {

@@ -32,7 +32,7 @@ source "${CURRENT_DIR}/common.sh"
 # The kubernetes tag to build the kind cluster from
 # From ${KIND_K8S_REPO}/tags
 # KIND_K8S_REPO:="https://github.com/kubernetes/kubernetes.git"
-KIND_K8S_TAG="v1.33.0"
+KIND_K8S_TAG="v1.34.0"
 
 # The name of the kind image to build / run
 KIND_IMAGE="kindest/node:${KIND_K8S_TAG}"

@@ -114,7 +114,7 @@ Requesting 2 Spyre card within the same NUMA|:heavy_check_mark:|[Example 3](#exa
 #### Example 2: specify a specific PCI address
 
   ```yaml
-  apiVersion: resource.k8s.io/v1beta1
+  apiVersion: resource.k8s.io/v1
   kind: ResourceClaimTemplate
   ...
   spec:
@@ -122,11 +122,13 @@ Requesting 2 Spyre card within the same NUMA|:heavy_check_mark:|[Example 3](#exa
       devices:
         requests:
         - name: spyre
+          exactly:
+            exactly:
           deviceClassName: spyre.ibm.com
-          selectors:
-          - cel:
-            expression: |-
-              device.attributes["spyre.ibm.com"].pciAddress == "0000:1a:00.0"
+            selectors:
+            - cel:
+              expression: |-
+                device.attributes["spyre.ibm.com"].pciAddress == "0000:1a:00.0"
   ```
 
   [Example](./demo/kind/spyre-test2.yaml)

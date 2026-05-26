@@ -21,7 +21,7 @@ import (
 	"context"
 
 	. "github.com/onsi/gomega"
-	resourcev1beta1 "k8s.io/api/resource/v1beta1"
+	resourcev1 "k8s.io/api/resource/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -35,7 +35,7 @@ const (
 )
 
 const ResourceClaimTemplate = `
-apiVersion: resource.k8s.io/v1beta1
+apiVersion: resource.k8s.io/v1
 kind: ResourceClaimTemplate
 metadata:
   name: {{ .Name }}
@@ -45,21 +45,22 @@ spec:
     devices:
       requests:
       - name: spyre
-        deviceClassName: spyre.ibm.com
-        {{- if gt .Count 0 }}
-        count: {{ .Count }}
-        {{- end}}
-        {{- if .PCIAddress }}
-        selectors:
-        - cel:
-            expression: |-
-              device.attributes["spyre.ibm.com"].pciAddress == "{{ .PCIAddress }}"
-        {{- else if .ProductId }}
-        selectors:
-        - cel:
-            expression: |-
-              device.attributes["spyre.ibm.com"].productId == "{{ .ProductId }}"
-        {{- end}}
+        exactly:
+          deviceClassName: spyre.ibm.com
+          {{- if gt .Count 0 }}
+          count: {{ .Count }}
+          {{- end}}
+          {{- if .PCIAddress }}
+          selectors:
+          - cel:
+              expression: |-
+                device.attributes["spyre.ibm.com"].pciAddress == "{{ .PCIAddress }}"
+          {{- else if .ProductId }}
+          selectors:
+          - cel:
+              expression: |-
+                device.attributes["spyre.ibm.com"].productId == "{{ .ProductId }}"
+          {{- end}}
       {{- if .MatchAttribute }}
       constraints:
       - requests: ["spyre"]
@@ -150,14 +151,14 @@ func BuildPCISpecificResourceClaimTemplate(ctx context.Context, dynClient *dynam
 	BuildResourceClaimTemplate(ctx, dynClient, discoClient, data)
 }
 
-func ListResourceSlices(ctx context.Context, k8sClientset *kubernetes.Clientset) []resourcev1beta1.ResourceSlice {
-	slices, err := k8sClientset.ResourceV1beta1().ResourceSlices().List(ctx, metav1.ListOptions{})
+func ListResourceSlices(ctx context.Context, k8sClientset *kubernetes.Clientset) []resourcev1.ResourceSlice {
+	slices, err := k8sClientset.ResourceV1().ResourceSlices().List(ctx, metav1.ListOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	return slices.Items
 }
 
-func ListResourceClaims(ctx context.Context, k8sClientset *kubernetes.Clientset, namespace string) []resourcev1beta1.ResourceClaim {
-	claims, err := k8sClientset.ResourceV1beta1().ResourceClaims(namespace).List(ctx, metav1.ListOptions{})
+func ListResourceClaims(ctx context.Context, k8sClientset *kubernetes.Clientset, namespace string) []resourcev1.ResourceClaim {
+	claims, err := k8sClientset.ResourceV1().ResourceClaims(namespace).List(ctx, metav1.ListOptions{})
 	Expect(err).NotTo(HaveOccurred())
 	return claims.Items
 }

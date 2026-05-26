@@ -5,7 +5,8 @@
 
 ARG BASE_UBI_IMAGE_TAG=9.6
 ARG BUILDER_IMAGE
-FROM ${BUILDER_IMAGE:-registry.access.redhat.com/ubi9/go-toolset:1.24.6-1758501173} AS builder
+# Latest UBI image with Go 1.25
+FROM ${BUILDER_IMAGE:-registry.access.redhat.com/ubi9/go-toolset:1.25.9-1778675823} AS builder
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -23,7 +24,7 @@ COPY vendor vendor
 ARG VERSION=""
 ARG BUILD_FLAGS=""
 
-ENV GOTOOLCHAIN="go1.24.13"
+ENV GOTOOLCHAIN="go1.25.10"
 RUN echo "TARGETARCH = '${TARGETARCH}' TARGETOS='${TARGETOS}'" && \
     echo "GO ENV DUMP: " && go env GOVERSION && go env GOTOOLDIR && \
     CGO_ENABLED=1 GOOS=${TARGETOS} GOARCH=${TARGETARCH} GO111MODULE=on \
