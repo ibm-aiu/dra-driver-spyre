@@ -12,7 +12,7 @@ on:
         description: 'Kind node image'
         required: false
         type: string
-        default: 'kindest/node:v1.33.0'
+        default: 'kindest/node:v1.34.0'
 
 permissions: read-all
 
