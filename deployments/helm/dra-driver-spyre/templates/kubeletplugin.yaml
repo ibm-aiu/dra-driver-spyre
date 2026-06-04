@@ -90,7 +90,7 @@ spec:
         - name: hwdata
           mountPath: "/usr/share/hwdata"
         - name: dra-driver-config
-          mountPath: /usr/local/etc/spyre-dra-driver
+          mountPath: /usr/local/etc/dra-driver-spyre
           readOnly: false
         - name: senlib-config-template
           mountPath: "/etc/senlib-config-template"
@@ -112,7 +112,7 @@ spec:
           path: "/usr/share/hwdata"
       - name: dra-driver-config
         hostPath:
-          path: /usr/local/etc/spyre-dra-driver
+          path: /usr/local/etc/dra-driver-spyre
           type: DirectoryOrCreate
       - name: senlib-config-template
         configMap:

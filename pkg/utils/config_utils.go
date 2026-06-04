@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	deviceDriverPath = "/usr/local/etc/spyre-dra-driver"
+	deviceDriverPath = "/usr/local/etc/dra-driver-spyre"
 	defaultHostPath  = filepath.Join(deviceDriverPath, cst.SpyreConfigBaseFolderName)
 
 	defaultOutputPath     = "/etc/aiu"
