@@ -24,7 +24,7 @@ spec:
           selectors:
           - cel:
               expression: |-
-                device.attributes["spyre.ibm.com"].deviceCode == "06a7"
+                device.attributes["spyre.ibm.com"].productId == "06a7"
       constraints:
       - requests: ["spyre"]
         matchAttribute: "spyre.ibm.com/numaInfo"
@@ -46,7 +46,7 @@ spec:
           selectors:
           - cel:
               expression: |-
-                device.attributes["spyre.ibm.com"].deviceCode == "06a7"
+                device.attributes["spyre.ibm.com"].productId == "06a7"
       constraints:
       - requests: ["spyre"]
         matchAttribute: "spyre.ibm.com/numaInfo"
@@ -74,8 +74,6 @@ spec:
       runAsNonRoot: true
       seccompProfile:
         type: RuntimeDefault
-  nodeSelector:
-    kubernetes.io/hostname: dra418-8r6hd-worker-1-bn4fq
   resourceClaims:
   - name: spyre
     resourceClaimTemplateName: 2-topo-aware-spyre-template
@@ -103,8 +101,6 @@ spec:
       runAsNonRoot: true
       seccompProfile:
         type: RuntimeDefault
-  nodeSelector:
-    kubernetes.io/hostname: dra418-8r6hd-worker-1-bn4fq
   resourceClaims:
   - name: spyre
     resourceClaimTemplateName: 3-topo-aware-spyre-template
@@ -132,8 +128,6 @@ spec:
       runAsNonRoot: true
       seccompProfile:
         type: RuntimeDefault
-  nodeSelector:
-    kubernetes.io/hostname: dra418-8r6hd-worker-1-bn4fq
   resourceClaims:
   - name: spyre
     resourceClaimTemplateName: 3-topo-aware-spyre-template
