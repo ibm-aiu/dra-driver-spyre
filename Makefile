@@ -6,13 +6,8 @@
 MAKEFILE_PATH		:= $(abspath $(lastword $(MAKEFILE_LIST)))
 REPO_ROOT 			:= $(abspath $(patsubst %/,%,$(dir $(MAKEFILE_PATH))))
 
-# Go variables
-GOLANG_VERSION		?= 1.25.10
-GOTOOLCHAIN			?= go1.25.10
-GO					?= GOTOOLCHAIN=$(GOTOOLCHAIN) go
-
 # Export Go toolchain to ensure consistent version
-export GOTOOLCHAIN
+export GOTOOLCHAIN = auto
 
 # Image variables
 ## Ensure REGISTRY is updated to your registry before pushing an image.
@@ -291,6 +286,7 @@ docker-build: vendor ## Build spyre DRA driver image for build host architecture
 	--build-arg VERSION="$(VERSION)" \
 	--build-arg BUILDER_IMAGE="$(BUILDER_IMAGE)" \
 	--build-arg BUILD_FLAGS="$(DOCKER_GO_BUILD_FLAGS)" \
+	--build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) \
 	--file $(DOCKERFILE) $(CURDIR)
 
 .PHONY: docker-push
