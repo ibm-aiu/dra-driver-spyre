@@ -1,6 +1,6 @@
 module github.com/ibm-aiu/dra-driver-spyre
 
-go 1.25.10
+go 1.25.9
 
 require (
 	github.com/google/uuid v1.6.0
