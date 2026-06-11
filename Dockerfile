@@ -26,11 +26,13 @@ ARG BUILD_FLAGS=""
 
 ARG GOTOOLCHAIN=local
 ENV GOTOOLCHAIN=${GOTOOLCHAIN}
+ENV GOPROXY="https://proxy.golang.org,direct"
 
 RUN echo "TARGETARCH: ${TARGETARCH}" && \
     echo "TARGETOS: ${TARGETOS}" && \
     echo -n "GOVERSION: " && go env GOVERSION && \
     echo -n "GOTOOLCHAIN: " && go env GOTOOLCHAIN && \
+    echo -n "GOPROXY: " && go env GOPROXY && \
     CGO_ENABLED=1 GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" GO111MODULE=on GOTOOLCHAIN="${GOTOOLCHAIN}" \
     CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' \
     go build -ldflags "-s -w -X main.version=${VERSION}" -tags strictfipsruntime ${COMMAND_BUILD_OPTIONS} \
