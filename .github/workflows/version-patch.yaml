@@ -32,6 +32,8 @@ jobs:
   update-helm-charts:
     needs: version-patch
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version-patch.outputs.new_version }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -41,7 +43,6 @@ jobs:
 
     - name: Update Chart.yaml
       run: |
-        VERSION="${{ needs.version-patch.outputs.new_version }}"
         sed -i "s/^version: .*/version: $VERSION/" deployments/helm/dra-driver-spyre/Chart.yaml
         sed -i "s/^appVersion: .*/appVersion: \"$VERSION\"/" deployments/helm/dra-driver-spyre/Chart.yaml
         echo "Updated Chart.yaml with version $VERSION"
@@ -49,7 +50,6 @@ jobs:
 
     - name: Update values.yaml
       run: |
-        VERSION="${{ needs.version-patch.outputs.new_version }}"
         sed -i "s/tag: \".*\"/tag: \"$VERSION\"/" deployments/helm/dra-driver-spyre/values.yaml
         echo "Updated values.yaml with tag $VERSION"
         grep "tag:" deployments/helm/dra-driver-spyre/values.yaml
@@ -57,8 +57,7 @@ jobs:
     - name: Commit and push changes
       uses: planetscale/ghcommit-action@25309d8005ac7c3bcd61d3fe19b69e0fe47dbdde # v0.2.20
       with:
-        commit_message: |
-          "chore: update chart version to ${{ needs.version-patch.outputs.new_version }}"
+        commit_message: "chore: update chart to ${{ env.VERSION }}"
         repo: ${{ github.repository }}
         branch: ${{ needs.version-patch.outputs.branch_name }}
       env:
