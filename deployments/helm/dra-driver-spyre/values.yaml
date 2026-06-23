@@ -11,7 +11,7 @@ image:
   repository: docker.io/spyre-operator/dra-driver-spyre
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "1.3.0"
+  tag: "1.4.0"
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
