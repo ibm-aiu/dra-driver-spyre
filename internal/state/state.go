@@ -54,7 +54,7 @@ func NewDeviceState(config *flags.Config) (*DeviceState, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error device discovery initialization: %v", err)
 	}
-	allocatable, err := deviceDiscovery.GetAllocatableDevices()
+	allocatable, err := deviceDiscovery.GetAllocatableDevices(config.VFEnabled)
 	if err != nil {
 		return nil, fmt.Errorf("error get allocatable devices: %w", err)
 	}

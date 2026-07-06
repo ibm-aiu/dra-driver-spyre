@@ -102,7 +102,7 @@ func (pd *pciDevice) GetDriver() string {
 }
 
 func (pd *pciDevice) IsSriovPF() bool {
-	return false
+	return utils.IsSriovPF(pd.basePciDevice.Address)
 }
 
 func (pd *pciDevice) GetSubClass() string {

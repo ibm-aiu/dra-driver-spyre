@@ -67,7 +67,7 @@ func (d PseudoPciDevice) GetPfPciAddr() string {
 }
 
 func (d PseudoPciDevice) IsSriovPF() bool {
-	return true
+	return d.ProductID == string(ProductIDPf)
 }
 
 func (d PseudoPciDevice) GetSubClass() string {
