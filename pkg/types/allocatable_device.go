@@ -122,7 +122,7 @@ func getAttributes(index int, spyreDevice PciDevice,
 
 	addSpyreBasicAttributes(attributes, spyreDevice)
 	key := spyreDevice.GetPciAddr()
-	if topo != nil && topo.Devices != nil {
+	if topo != nil && (topo.Devices != nil || topo.SpyreVfDevices != nil) {
 		addTopologyMetadata(attributes, key, topo, pseudoNumaMap)
 	}
 	return attributes
@@ -149,7 +149,11 @@ func addSpyreBasicAttributes(attributes map[resourceapi.QualifiedName]resourceap
 
 func addTopologyMetadata(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute,
 	key string, topo *pcitopo.Pcitopo, pseudoNumaMap map[string]string) {
-	if device, found := topo.Devices[key]; found {
+	device, found := topo.Devices[key]
+	if !found {
+		device, found = topo.SpyreVfDevices[key]
+	}
+	if found {
 		attributes[LinkSpeedAttribute] = GetStringDeviceAttribute(device.Linkspeed)
 		attributes[NumaInfoAttribute] = GetStringDeviceAttribute(strconv.Itoa(device.NumaNode))
 		if device.Metadata != nil {
