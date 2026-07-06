@@ -68,6 +68,10 @@ func (d *DeviceDiscovery) GetAllocatableDevices() (types.AllocatableDevices, err
 				devices = append(devices,
 					types.GeneratePseudoDevice(dev, types.ProductIDPf))
 			}
+			for vfAddr := range topo.SpyreVfDevices {
+				devices = append(devices,
+					types.GeneratePseudoDevice(vfAddr, types.ProductIDVf))
+			}
 		} else {
 			klog.Warningf("cannot get PCI topology config: %v, use default pseudo devices", err)
 			devices = []*ghw.PCIDevice{
