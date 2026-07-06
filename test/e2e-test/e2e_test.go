@@ -50,4 +50,32 @@ var _ = Describe("e2e test", Ordered, func() {
 			Entry("over availability", 9, v1.PodPending),
 		)
 	})
+
+	Context("pseudo mode - VF", func() {
+		DescribeTable("simple allocation", func(count int, expectedPhase v1.PodPhase) {
+			ctx := context.Background()
+			claimName := "test-claim-vf"
+			podName := "test-pod-vf"
+			testNamespace := testutil.CreateRandomTestNamespace(ctx, k8sClientset)
+			By("deploying ResourceClaimTemplate")
+			claimData := testutil.BasicResourceClaimTemplateData(claimName, testNamespace).
+				SetCount(count).
+				SetProductId(testutil.VfProductId)
+			testutil.BuildResourceClaimTemplate(ctx, dynClient, discoClient, claimData)
+			By("deploying Pod")
+			podData := testutil.BasicPodTemplateData(podName, testNamespace).SetArg0(testutil.PrintSenlibConfig)
+			testutil.BuildPod(ctx, dynClient, discoClient, podData, claimName)
+			testutil.CheckPodPhases(ctx, k8sClientset, []*testutil.PodTemplateData{podData}, map[v1.PodPhase]int{expectedPhase: 1})
+			if expectedPhase == v1.PodRunning {
+				allocations := testutil.CheckAndGetAllocationsFromPodLog(ctx, k8sClientset, podName, testNamespace, claimData.IsVF())
+				Expect(allocations).To(HaveLen(count))
+			}
+			By("deleting pod")
+			testutil.DeletePod(ctx, k8sClientset, podData)
+		}, Entry("one VF device", 1, v1.PodRunning),
+			Entry("four VF devices", 4, v1.PodRunning),
+			Entry("all VF devices", 13, v1.PodRunning),
+			Entry("over availability", 14, v1.PodPending),
+		)
+	})
 })
