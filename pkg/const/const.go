@@ -50,6 +50,7 @@ const (
 
 // Container-related constants
 const (
-	VfioMount    = "/dev/vfio/vfio"
-	DeviceEnvKey = "PCIDEVICE_IBM_COM_AIU_PF"
+	VfioMount      = "/dev/vfio/vfio"
+	DeviceEnvKey   = "PCIDEVICE_IBM_COM_AIU_PF"
+	DeviceEnvKeyVf = "PCIDEVICE_IBM_COM_AIU_VF"
 )

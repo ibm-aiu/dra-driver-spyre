@@ -129,7 +129,7 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, productId types.Prod
 		return spec, fmt.Errorf("failed to get config mounts: %w", err)
 	}
 	commonEnvs := []string{
-		GetDeviceEnvs(deviceIDs),
+		GetDeviceEnvs(productId, deviceIDs),
 	}
 	for i, device := range devices {
 		envs := []string{}
@@ -218,8 +218,13 @@ func GetDeviceIDs(devices types.PreparedDevices) []string {
 	return deviceIDs
 }
 
-// GetDeviceEnvs returns an environment PCIDEVICE_IBM_COM_AIU_PF = list of assigned devices.
-func GetDeviceEnvs(deviceIDs []string) string {
+// GetDeviceEnvs returns an environment variable for the assigned devices.
+// The key is PCIDEVICE_IBM_COM_AIU_PF for PF devices and PCIDEVICE_IBM_COM_AIU_VF for VF devices.
+func GetDeviceEnvs(productId types.ProductID, deviceIDs []string) string {
+	key := cst.DeviceEnvKey
+	if productId == types.ProductIDVf {
+		key = cst.DeviceEnvKeyVf
+	}
 	values := ""
 	lastIndex := len(deviceIDs) - 1
 	for i, s := range deviceIDs {
@@ -229,7 +234,7 @@ func GetDeviceEnvs(deviceIDs []string) string {
 		}
 		values += ","
 	}
-	return fmt.Sprintf("%s=%s", cst.DeviceEnvKey, values)
+	return fmt.Sprintf("%s=%s", key, values)
 }
 
 // CleanZombieConfigFolders removes all config file path those are not referred in CDI specs.
