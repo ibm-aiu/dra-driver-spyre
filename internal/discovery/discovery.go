@@ -58,8 +58,10 @@ func NewDeviceDiscovery(topologyFile string) (*DeviceDiscovery, error) {
 	}, nil
 }
 
-// GetAllocatableDevices is called only once at NewDeviceState
-func (d *DeviceDiscovery) GetAllocatableDevices() (types.AllocatableDevices, error) {
+// GetAllocatableDevices is called only once at NewDeviceState.
+// vfEnabled reflects SpyreClusterPolicy.spec.cardManagement.enabled and is
+// stored as the "vfEnabled" attribute on every device in the ResourceSlice.
+func (d *DeviceDiscovery) GetAllocatableDevices(vfEnabled bool) (types.AllocatableDevices, error) {
 	var devices []*ghw.PCIDevice
 	topo, err := topology.GetPciTopology(d.topologyFile)
 	if utils.IsPseudoDeviceMode() {
@@ -95,7 +97,7 @@ func (d *DeviceDiscovery) GetAllocatableDevices() (types.AllocatableDevices, err
 	if len(devices) == 0 {
 		klog.Warningf("discoverDevices(): no PCI device found")
 	}
-	return types.NewAllocatableDevices(devices, topo), nil
+	return types.NewAllocatableDevices(devices, topo, vfEnabled), nil
 }
 
 // discoverTargetDevices lists all devices from hwloc and filters only target device codes

@@ -25,6 +25,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	spyreclient "github.com/ibm-aiu/spyre-operator/pkg/client"
 	cli "github.com/urfave/cli/v2"
 	klog "k8s.io/klog/v2"
 
@@ -104,9 +105,31 @@ func newApp() *cli.App {
 				return fmt.Errorf("create client: %v", err)
 			}
 
+			// 起動時に一度だけ SpyreClusterPolicy を読み、VF 有効/無効を判定する。
+			// エラー時（CRD 未インストール等）は VF 無効として続行する。
+			vfEnabled := false
+			restCfg, err := flags.KubeClientConfig.NewClientSetConfig()
+			if err != nil {
+				klog.Warningf("cannot get rest config for SpyreClusterPolicy lookup, assuming VF disabled: %v", err)
+			} else {
+				sc, err := spyreclient.NewClient(ctx, restCfg)
+				if err != nil {
+					klog.Warningf("cannot create spyre client for SpyreClusterPolicy lookup, assuming VF disabled: %v", err)
+				} else {
+					policy, err := sc.GetSpyreClusterPolicy(ctx, "spyreclusterpolicy")
+					if err != nil {
+						klog.Warningf("cannot get SpyreClusterPolicy, assuming VF disabled: %v", err)
+					} else {
+						vfEnabled = policy.Spec.CardManagement.Enabled
+						klog.Infof("SpyreClusterPolicy: cardManagement.enabled=%v → vfEnabled=%v", vfEnabled, vfEnabled)
+					}
+				}
+			}
+
 			config := &flgs.Config{
 				Flags:      flags,
 				Coreclient: clientSets.Core,
+				VFEnabled:  vfEnabled,
 			}
 
 			return RunPlugin(ctx, config)

@@ -34,6 +34,21 @@ const (
 	configuredVfFile = "sriov_numvfs"
 )
 
+// GetPCIFunctionIndex returns the PCI function number from a PCI address string
+// (e.g. "0000:1a:00.0" → 0, "0000:1a:00.1" → 1).
+// Returns -1 if the address cannot be parsed.
+func GetPCIFunctionIndex(pciAddr string) int {
+	dot := strings.LastIndex(pciAddr, ".")
+	if dot < 0 || dot == len(pciAddr)-1 {
+		return -1
+	}
+	n, err := strconv.Atoi(pciAddr[dot+1:])
+	if err != nil {
+		return -1
+	}
+	return n
+}
+
 func PciAddressToDeviceName(pciAddress string) string {
 	re := regexp.MustCompile(`[:.]`)
 	return re.ReplaceAllString(pciAddress, "-")
