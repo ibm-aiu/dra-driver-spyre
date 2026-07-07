@@ -1,8 +1,43 @@
+---
+# spyre-pf: PF (.0) devices visible only when VF is enabled.
+# Restricted to privileged namespaces (e.g. spyre-operator) by spyre-webhook-validator.
 apiVersion: resource.k8s.io/v1
 kind: DeviceClass
 metadata:
-  name: spyre.ibm.com
+  name: spyre-pf
 spec:
   selectors:
   - cel:
-      expression: "device.driver == 'spyre.ibm.com'"
+      expression: >
+        device.driver == 'spyre.ibm.com' &&
+        device.attributes["spyre.ibm.com"].pciFunctionIndex == 0 &&
+        device.attributes["spyre.ibm.com"].vfEnabled == true
+---
+# spyre-privileged-vf: first VF (.1) per PF.
+# Not published when VF is disabled, so this class is effectively static in that state.
+# Restricted to privileged namespaces by spyre-webhook-validator.
+apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: spyre-privileged-vf
+spec:
+  selectors:
+  - cel:
+      expression: >
+        device.driver == 'spyre.ibm.com' &&
+        device.attributes["spyre.ibm.com"].pciFunctionIndex == 1
+---
+# spyre-standard-vf: all devices not matched by spyre-pf or spyre-privileged-vf.
+# Includes .0 devices when VF is disabled. No namespace restriction.
+apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: spyre-standard-vf
+spec:
+  selectors:
+  - cel:
+      expression: >
+        device.driver == 'spyre.ibm.com' &&
+        device.attributes["spyre.ibm.com"].pciFunctionIndex != 1 &&
+        !(device.attributes["spyre.ibm.com"].pciFunctionIndex == 0 &&
+          device.attributes["spyre.ibm.com"].vfEnabled == true)
