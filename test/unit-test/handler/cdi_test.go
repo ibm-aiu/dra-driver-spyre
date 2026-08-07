@@ -33,7 +33,7 @@ func generateUID() string {
 }
 
 func getPreparedDevices(pciAddresses []string) types.PreparedDevices {
-	var preparedDevices types.PreparedDevices
+	preparedDevices := make(types.PreparedDevices, 0, len(pciAddresses))
 	for _, pciAddress := range pciAddresses {
 		config := configapi.DefaultParams()
 		deviceName := PciAddressToDeviceName(pciAddress)

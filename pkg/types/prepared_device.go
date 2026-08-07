@@ -55,7 +55,7 @@ func (p *PreparedDevice) ApplyConfig() error {
 
 // GetDevices extracts the list of drapbv1.Devices from PreparedDevices.
 func (pds PreparedDevices) GetDevices() []*drapbv1.Device {
-	devices := []*drapbv1.Device{}
+	devices := make([]*drapbv1.Device, 0, len(pds))
 	for _, pd := range pds {
 		devices = append(devices, &pd.Device)
 	}

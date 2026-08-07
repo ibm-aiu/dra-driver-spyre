@@ -242,7 +242,7 @@ func GetOpaqueDeviceConfigs(
 	// Collect all configs in order of reverse precedence.
 	var classConfigs []resourceapi.DeviceConfiguration
 	var claimConfigs []resourceapi.DeviceConfiguration
-	var candidateConfigs []resourceapi.DeviceConfiguration
+	candidateConfigs := make([]resourceapi.DeviceConfiguration, 0, len(possibleConfigs))
 	for _, config := range possibleConfigs {
 		// If the config is for specific requests and the current request isn't
 		// one of those, the config can be ignored.

@@ -44,7 +44,8 @@ func newApp() *cli.App {
 	flags := &flgs.Flags{
 		LoggingConfig: flgs.NewLoggingConfig(),
 	}
-	cliFlags := []cli.Flag{
+	cliFlags := make([]cli.Flag, 0, 5+len(flags.KubeClientConfig.Flags())+len(flags.LoggingConfig.Flags())+len(flags.DiscoveryConfig.Flags()))
+	cliFlags = append(cliFlags,
 		&cli.StringFlag{
 			Name:        "node-name",
 			Usage:       "The name of the node to be worked on.",
@@ -80,7 +81,7 @@ func newApp() *cli.App {
 			Destination: &flags.HealthCheckPort,
 			EnvVars:     []string{"HEALTHCHECK_PORT"},
 		},
-	}
+	)
 	cliFlags = append(cliFlags, flags.KubeClientConfig.Flags()...)
 	cliFlags = append(cliFlags, flags.LoggingConfig.Flags()...)
 	cliFlags = append(cliFlags, flags.DiscoveryConfig.Flags()...)

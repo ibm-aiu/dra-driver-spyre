@@ -132,7 +132,7 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, productId types.Prod
 		GetDeviceEnvs(deviceIDs),
 	}
 	for i, device := range devices {
-		envs := []string{}
+		envs := make([]string, 0, 1)
 		envs = append(envs, fmt.Sprintf("AIU_DEVICE_%d=%s", i, device.PciAddress))
 		cdiDevice := cdispec.Device{
 			Name: device.DeviceName,
@@ -197,9 +197,8 @@ func (cdi *CDIHandler) getSpecFilePath(specName string) (string, error) {
 
 // GetClaimDevices parses device IDs to qualified cdi devices (prefixed with vendor and class)
 func GetClaimDevices(devices []string) []string {
-	cdiDevices := []string{
-		cdiparser.QualifiedName(cdiVendor, cdiClass, cdiCommonDeviceName),
-	}
+	cdiDevices := make([]string, 0, 1+len(devices))
+	cdiDevices = append(cdiDevices, cdiparser.QualifiedName(cdiVendor, cdiClass, cdiCommonDeviceName))
 
 	for _, device := range devices {
 		cdiDevice := cdiparser.QualifiedName(cdiVendor, cdiClass, device)
@@ -211,7 +210,7 @@ func GetClaimDevices(devices []string) []string {
 
 // GetDeviceIDs returns device ids from prepared devices' information.
 func GetDeviceIDs(devices types.PreparedDevices) []string {
-	deviceIDs := []string{}
+	deviceIDs := make([]string, 0, len(devices))
 	for _, device := range devices {
 		deviceIDs = append(deviceIDs, device.PciAddress)
 	}

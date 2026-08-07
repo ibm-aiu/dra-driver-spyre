@@ -86,7 +86,7 @@ func (t Pcitopo) String() string {
 }
 
 func (t Pcitopo) GetDevices() []string {
-	devices := []string{}
+	devices := make([]string, 0, len(t.Devices))
 	for device := range t.Devices {
 		devices = append(devices, device)
 	}
