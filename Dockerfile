@@ -5,8 +5,8 @@
 
 ARG BASE_UBI_IMAGE_TAG=9.6
 ARG BUILDER_IMAGE
-# Latest UBI image with Go 1.25
-FROM ${BUILDER_IMAGE:-registry.access.redhat.com/ubi9/go-toolset:1.25.9-1778675823} AS builder
+# Latest UBI image with Go 1.26
+FROM ${BUILDER_IMAGE:-registry.access.redhat.com/ubi9/go-toolset:1.26.4-1783442369} AS builder
 ARG TARGETOS
 ARG TARGETARCH
 
