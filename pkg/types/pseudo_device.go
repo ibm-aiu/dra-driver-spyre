@@ -79,7 +79,7 @@ func (d PseudoPciDevice) GetCDIDeviceSpec() []*cdispec.DeviceNode {
 		{
 			HostPath:    cst.VfioMount,
 			Path:        cst.VfioMount,
-			Permissions: "mrw",
+			Permissions: cst.DeviceNodePermission,
 		},
 	}
 	return v

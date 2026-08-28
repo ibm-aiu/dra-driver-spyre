@@ -94,12 +94,23 @@ func NewDeviceState(config *flags.Config) (*DeviceState, error) {
 		}
 	}
 
+	err = state.SetNewCheckPoint()
+	return state, err
+}
+
+// SetNewCheckPoint creates an empty checkpoint file on disk.
+func (s *DeviceState) SetNewCheckPoint() error {
 	checkpoint := newCheckpoint()
-	if err := state.checkpointManager.CreateCheckpoint(cst.DriverPluginCheckpointFile, checkpoint); err != nil {
-		return nil, fmt.Errorf("unable to sync to checkpoint: %v", err)
+	if err := s.checkpointManager.CreateCheckpoint(cst.DriverPluginCheckpointFile, checkpoint); err != nil {
+		return fmt.Errorf("unable to create new checkpoint: %v", err)
 	}
 
-	return state, nil
+	return nil
+}
+
+// SetCheckpointManager replaces the checkpoint manager, primarily for testing with a temporary directory.
+func (s *DeviceState) SetCheckpointManager(cpManager checkpointmanager.CheckpointManager) {
+	s.checkpointManager = cpManager
 }
 
 func (s *DeviceState) Prepare(claim *resourceapi.ResourceClaim) ([]*drapbv1.Device, error) {
@@ -110,7 +121,7 @@ func (s *DeviceState) Prepare(claim *resourceapi.ResourceClaim) ([]*drapbv1.Devi
 
 	checkpoint := newCheckpoint()
 	if err := s.checkpointManager.GetCheckpoint(cst.DriverPluginCheckpointFile, checkpoint); err != nil {
-		return nil, fmt.Errorf("unable to sync from checkpoint: %v", err)
+		return nil, fmt.Errorf("unable to get checkpoint on prepare: %v", err)
 	}
 	preparedClaims := checkpoint.V1.PreparedClaims
 
@@ -130,7 +141,7 @@ func (s *DeviceState) Prepare(claim *resourceapi.ResourceClaim) ([]*drapbv1.Devi
 
 	preparedClaims[claimUID] = preparedDevices
 	if err := s.checkpointManager.CreateCheckpoint(cst.DriverPluginCheckpointFile, checkpoint); err != nil {
-		return nil, fmt.Errorf("unable to sync to checkpoint: %v", err)
+		return nil, fmt.Errorf("unable to sync current checkpoint: %v", err)
 	}
 
 	return preparedClaims[claimUID].GetDevices(), nil
@@ -142,7 +153,7 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 
 	checkpoint := newCheckpoint()
 	if err := s.checkpointManager.GetCheckpoint(cst.DriverPluginCheckpointFile, checkpoint); err != nil {
-		return fmt.Errorf("unable to sync from checkpoint: %v", err)
+		return fmt.Errorf("unable to get checkpoint on unprepare: %v", err)
 	}
 	preparedClaims := checkpoint.V1.PreparedClaims
 
@@ -174,6 +185,9 @@ func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (types.Pr
 	// Walk through each device allocation and prepare it.
 	var preparedDevices types.PreparedDevices
 	for _, result := range claim.Status.Allocation.Devices.Results {
+		if result.Driver != cst.DriverName {
+			continue
+		}
 		allocatableDevice, exists := s.Allocatable[result.Device]
 		if !exists {
 			return "", nil, fmt.Errorf("requested device is not allocatable: %v", result.Device)
