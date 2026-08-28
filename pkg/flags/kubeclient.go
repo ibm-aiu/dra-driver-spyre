@@ -27,6 +27,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const (
+	k8sClientCategory = "Kubernetes client:"
+)
+
 type KubeClientConfig struct {
 	KubeConfig   string
 	KubeAPIQPS   float64
@@ -40,14 +44,14 @@ type ClientSets struct {
 func (k *KubeClientConfig) Flags() []cli.Flag {
 	flags := []cli.Flag{
 		&cli.StringFlag{
-			Category:    "Kubernetes client:",
+			Category:    k8sClientCategory,
 			Name:        "kubeconfig",
 			Usage:       "Absolute path to the `KUBECONFIG` file",
 			Destination: &k.KubeConfig,
 			EnvVars:     []string{"KUBECONFIG"},
 		},
 		&cli.Float64Flag{
-			Category:    "Kubernetes client:",
+			Category:    k8sClientCategory,
 			Name:        "kube-api-qps",
 			Usage:       "`QPS` to use while communicating with the Kubernetes apiserver.",
 			Value:       5,
@@ -55,7 +59,7 @@ func (k *KubeClientConfig) Flags() []cli.Flag {
 			EnvVars:     []string{"KUBE_API_QPS"},
 		},
 		&cli.IntFlag{
-			Category:    "Kubernetes client:",
+			Category:    k8sClientCategory,
 			Name:        "kube-api-burst",
 			Usage:       "`Burst` to use while communicating with the Kubernetes apiserver.",
 			Value:       10,

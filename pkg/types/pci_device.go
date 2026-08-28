@@ -114,7 +114,7 @@ func (pd *pciDevice) GetCDIDeviceSpec() []*cdispec.DeviceNode {
 	devSpecs = append(devSpecs, &cdispec.DeviceNode{
 		HostPath:    cst.VfioMount,
 		Path:        cst.VfioMount,
-		Permissions: "mrw",
+		Permissions: cst.DeviceNodePermission,
 	})
 	pciAddr := pd.GetPciAddr()
 	vfioDevHost, vfioDevContainer, err := utils.GetVFIODeviceFile(pciAddr)
@@ -124,7 +124,7 @@ func (pd *pciDevice) GetCDIDeviceSpec() []*cdispec.DeviceNode {
 		devSpecs = append(devSpecs, &cdispec.DeviceNode{
 			HostPath:    vfioDevHost,
 			Path:        vfioDevContainer,
-			Permissions: "mrw",
+			Permissions: cst.DeviceNodePermission,
 		})
 	}
 	return devSpecs
