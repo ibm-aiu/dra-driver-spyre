@@ -17,7 +17,7 @@ DOCKER				?= $(shell command -v podman 2> /dev/null || echo docker)
 DOCKERFILE			= $(REPO_ROOT)/Dockerfile
 DOCKER_BUILD_OPTS	?= --progress=plain
 DRIVER_NAME 		?= dra-driver-spyre
-BUILDER_IMAGE		?= registry.access.redhat.com/ubi9/go-toolset:1.26.4-1783442369
+BUILDER_IMAGE		?= registry.access.redhat.com/ubi9/go-toolset:1.26.7
 MODULE				:= github.com/ibm-aiu/$(DRIVER_NAME)
 IMAGE_NAME			=  $(REGISTRY)/$(DRIVER_NAME)
 IMAGE_TAG			?= $(VERSION)
@@ -108,7 +108,7 @@ $(GINKGO):$(LOCALBIN)
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download and install setup-envtest
 $(ENVTEST):$(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.22
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.24.1
 
 GOLANGCI_LINT_INSTALL_SCRIPT ?= 'https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh'
 .PHONY: golangci-lint
