@@ -64,7 +64,7 @@ type SpyreDevice struct {
 	PciDevice
 }
 
-func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo, vfEnabled bool) AllocatableDevices {
+func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo) AllocatableDevices {
 	alldevices := make(AllocatableDevices, 0)
 
 	// Quick return
@@ -74,6 +74,7 @@ func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo,
 
 	index := 0
 	spyreDevices := convertToSpyrePCIDevices(hwDevices)
+	vfEnabled := hasVfDevice(spyreDevices)
 	// To remove this logic when device plugin's PseudoPciDevice supports numa info mock.
 	var pseudoNumMap map[string]string
 	if pciTopo != nil && utils.IsPseudoDeviceMode() {
@@ -96,6 +97,17 @@ func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo,
 		index += 1
 	}
 	return alldevices
+}
+
+// hasVfDevice reports whether any discovered device is a Spyre VF, which
+// indicates that VF carving is currently active on this node.
+func hasVfDevice(devices []PciDevice) bool {
+	for _, device := range devices {
+		if device.GetProductID() == string(ProductIDVf) {
+			return true
+		}
+	}
+	return false
 }
 
 func convertToSpyrePCIDevices(devices []*ghw.PCIDevice) []PciDevice {

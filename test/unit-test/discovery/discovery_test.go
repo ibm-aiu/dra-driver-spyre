@@ -22,7 +22,7 @@ import (
 var _ = Describe("main functions", func() {
 
 	It("get allocatable devices", func() {
-		allocatableDevices, err := deviceDiscovery.GetAllocatableDevices(false)
+		allocatableDevices, err := deviceDiscovery.GetAllocatableDevices()
 		Expect(err).To(BeNil())
 		Expect(len(allocatableDevices)).To(Equal(8))
 		numaCount := make(map[string]int)

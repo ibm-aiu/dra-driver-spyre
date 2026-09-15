@@ -37,9 +37,6 @@ type Config struct {
 	Flags         *Flags
 	Coreclient    coreclientset.Interface
 	CancelMainCtx func(error)
-	// VFEnabled は起動時に SpyreClusterPolicy.spec.cardManagement.enabled を読んだ値。
-	// ResourceSlice の device attribute "vfEnabled" にセットするために使う。
-	VFEnabled bool
 }
 
 func (c Config) DriverPluginPath() string {

@@ -4,7 +4,6 @@ go 1.26.7
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/ibm-aiu/spyre-operator v0.0.0-20260409090455-1aec1256def0
 	github.com/jaypipes/ghw v0.25.0
 	github.com/jaypipes/pcidb v1.1.1
 	github.com/onsi/ginkgo/v2 v2.29.0
