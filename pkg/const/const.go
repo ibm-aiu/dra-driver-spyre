@@ -53,4 +53,5 @@ const (
 	VfioMount            = "/dev/vfio/vfio"
 	DeviceNodePermission = "mrw"
 	DeviceEnvKey         = "PCIDEVICE_IBM_COM_AIU_PF"
+	DeviceEnvKeyVf       = "PCIDEVICE_IBM_COM_AIU_VF"
 )
