@@ -49,12 +49,14 @@ var (
 )
 
 type DeviceDiscovery struct {
-	topologyFile string
+	topologyFile           string
+	disableVirtualFunction bool
 }
 
-func NewDeviceDiscovery(topologyFile string) (*DeviceDiscovery, error) {
+func NewDeviceDiscovery(topologyFile string, disableVirtualFunction bool) (*DeviceDiscovery, error) {
 	return &DeviceDiscovery{
-		topologyFile: topologyFile,
+		topologyFile:           topologyFile,
+		disableVirtualFunction: disableVirtualFunction,
 	}, nil
 }
 
@@ -95,7 +97,7 @@ func (d *DeviceDiscovery) GetAllocatableDevices() (types.AllocatableDevices, err
 	if len(devices) == 0 {
 		klog.Warningf("discoverDevices(): no PCI device found")
 	}
-	return types.NewAllocatableDevices(devices, topo), nil
+	return types.NewAllocatableDevices(devices, topo, d.disableVirtualFunction), nil
 }
 
 // discoverTargetDevices lists all devices from hwloc and filters only target device codes

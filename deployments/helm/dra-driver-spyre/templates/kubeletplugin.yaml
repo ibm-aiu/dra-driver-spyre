@@ -78,6 +78,10 @@ spec:
         - name: PSEUDO_DEVICE_MODE
           value: "1"
         {{- end }}
+        {{- if .Values.kubeletPlugin.containers.plugin.disableVirtualFunction }}
+        - name: DISABLE_VIRTUAL_FUNCTION
+          value: "1"
+        {{- end }}
         volumeMounts:
         - name: plugins-registry
           mountPath: {{ .Values.kubeletPlugin.kubeletRegistrarDirectoryPath | quote }}

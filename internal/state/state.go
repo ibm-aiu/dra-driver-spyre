@@ -50,7 +50,7 @@ func NewDeviceState(config *flags.Config) (*DeviceState, error) {
 	if topologyFile == "" {
 		topologyFile = topology.GetTopologyFile()
 	}
-	deviceDiscovery, err := discovery.NewDeviceDiscovery(topologyFile)
+	deviceDiscovery, err := discovery.NewDeviceDiscovery(topologyFile, config.Flags.DiscoveryConfig.DisableVirtualFunction)
 	if err != nil {
 		return nil, fmt.Errorf("error device discovery initialization: %v", err)
 	}

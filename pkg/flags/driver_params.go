@@ -19,7 +19,8 @@ import (
 )
 
 type DiscoveryConfig struct {
-	TopologyFilepath string
+	TopologyFilepath       string
+	DisableVirtualFunction bool
 }
 
 func (c *DiscoveryConfig) Flags() []cli.Flag {
@@ -30,6 +31,13 @@ func (c *DiscoveryConfig) Flags() []cli.Flag {
 			Usage:       "File location of device topology.",
 			Destination: &c.TopologyFilepath,
 			EnvVars:     []string{"TOPOLOGY_FILE"},
+		},
+		&cli.BoolFlag{
+			Category:    "Discovery config:",
+			Name:        "disable-virtual-function",
+			Usage:       "Never report VF support, even if VF devices are discovered on the node.",
+			Destination: &c.DisableVirtualFunction,
+			EnvVars:     []string{"DISABLE_VIRTUAL_FUNCTION"},
 		},
 	}
 	return flags

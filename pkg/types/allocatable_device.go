@@ -64,7 +64,7 @@ type SpyreDevice struct {
 	PciDevice
 }
 
-func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo) AllocatableDevices {
+func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo, disableVirtualFunction bool) AllocatableDevices {
 	alldevices := make(AllocatableDevices, 0)
 
 	// Quick return
@@ -74,7 +74,7 @@ func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo)
 
 	index := 0
 	spyreDevices := convertToSpyrePCIDevices(hwDevices)
-	vfEnabled := hasVfDevice(spyreDevices)
+	vfEnabled := hasVfDevice(spyreDevices) && !disableVirtualFunction
 	// To remove this logic when device plugin's PseudoPciDevice supports numa info mock.
 	var pseudoNumMap map[string]string
 	if pciTopo != nil && utils.IsPseudoDeviceMode() {
