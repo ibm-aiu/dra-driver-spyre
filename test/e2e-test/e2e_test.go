@@ -74,8 +74,8 @@ var _ = Describe("e2e test", Ordered, func() {
 			testutil.DeletePod(ctx, k8sClientset, podData)
 		}, Entry("one VF device", 1, v1.PodRunning),
 			Entry("four VF devices", 4, v1.PodRunning),
-			Entry("all VF devices", 13, v1.PodRunning),
-			Entry("over availability", 14, v1.PodPending),
+			Entry("all VF devices", 8, v1.PodRunning),
+			Entry("over availability", 9, v1.PodPending),
 		)
 	})
 })

@@ -32,6 +32,9 @@ const (
 	numaAttribute = "spyre.ibm.com/numaInfo"
 	PfProductId   = "06a7"
 	VfProductId   = "06a8"
+
+	pfDeviceClassName = "spyre-pf"
+	vfDeviceClassName = "spyre-standard-vf"
 )
 
 const ResourceClaimTemplate = `
@@ -46,7 +49,7 @@ spec:
       requests:
       - name: spyre
         exactly:
-          deviceClassName: spyre.ibm.com
+          deviceClassName: {{ .DeviceClassName }}
           {{- if gt .Count 0 }}
           count: {{ .Count }}
           {{- end}}
@@ -81,20 +84,22 @@ spec:
 // pciAddress and productId cannot be applied at the same time.
 // If both specified, pciAddress will be used.
 type ResourceClaimTemplateData struct {
-	Name           string
-	Namespace      string
-	Count          int
-	PCIAddress     string
-	ProductId      string
-	MatchAttribute string
+	Name            string
+	Namespace       string
+	Count           int
+	PCIAddress      string
+	ProductId       string
+	MatchAttribute  string
+	DeviceClassName string
 }
 
 // BasicResourceClaimTemplateData init data
 func BasicResourceClaimTemplateData(name, namespace string) *ResourceClaimTemplateData {
 	return &ResourceClaimTemplateData{
-		Name:      name,
-		Namespace: namespace,
-		ProductId: PfProductId, // default product id
+		Name:            name,
+		Namespace:       namespace,
+		ProductId:       PfProductId, // default product id
+		DeviceClassName: pfDeviceClassName,
 	}
 }
 
@@ -110,9 +115,15 @@ func (c *ResourceClaimTemplateData) SetPCIAddressSelector(pciAddress string) *Re
 	return c
 }
 
-// SetProductId sets productId in selector
+// SetProductId sets productId in selector, and switches the DeviceClass
+// (spyre-pf vs spyre-standard-vf) to match
 func (c *ResourceClaimTemplateData) SetProductId(productId string) *ResourceClaimTemplateData {
 	c.ProductId = productId
+	if productId == VfProductId {
+		c.DeviceClassName = vfDeviceClassName
+	} else {
+		c.DeviceClassName = pfDeviceClassName
+	}
 	return c
 }
 
