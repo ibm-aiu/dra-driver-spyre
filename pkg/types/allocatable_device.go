@@ -33,22 +33,24 @@ const (
 	DeviceTypeAttribute     = "deviceType"
 	DeviceTypeNameAttribute = "deviceTypeName"
 
-	VendorAttribute          = "vendor"
-	DriverAttribute          = "driver"
-	ProductIdAttribute       = "productId"
-	PciAddressesAttribute    = "pciAddress"
-	PfPciAddressAttribute    = "pfPciAddress"
-	IsPfAttribute            = "isPf"
-	SubClassAttribute        = "subClass"
-	VfIdAttribute            = "vfId"
-	NumaInfoAttribute        = "numaInfo"
-	LinkSpeedAttribute       = "linkSpeed"
-	ClockRPDAttribute        = "clockRPD"
-	ClockSOCAttribute        = "clockSOC"
-	MemoryBoostableAttribute = "memoryBoostable"
-	MemoryFrequencyAttribute = "memoryFrequency"
-	MemoryVendorAttribute    = "memoryVendor"
-	MemorySpeedAttribute     = "memorySpeed"
+	VendorAttribute           = "vendor"
+	DriverAttribute           = "driver"
+	ProductIdAttribute        = "productId"
+	PciAddressesAttribute     = "pciAddress"
+	PfPciAddressAttribute     = "pfPciAddress"
+	IsPfAttribute             = "isPf"
+	SubClassAttribute         = "subClass"
+	VfIdAttribute             = "vfId"
+	PciFunctionIndexAttribute = "pciFunctionIndex"
+	VfEnabledAttribute        = "vfEnabled"
+	NumaInfoAttribute         = "numaInfo"
+	LinkSpeedAttribute        = "linkSpeed"
+	ClockRPDAttribute         = "clockRPD"
+	ClockSOCAttribute         = "clockSOC"
+	MemoryBoostableAttribute  = "memoryBoostable"
+	MemoryFrequencyAttribute  = "memoryFrequency"
+	MemoryVendorAttribute     = "memoryVendor"
+	MemorySpeedAttribute      = "memorySpeed"
 
 	VfNumberCapacity   = "vfNum"
 	MemorySizeCapacity = "memory"
@@ -62,7 +64,7 @@ type SpyreDevice struct {
 	PciDevice
 }
 
-func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo) AllocatableDevices {
+func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo, disableVirtualFunction bool) AllocatableDevices {
 	alldevices := make(AllocatableDevices, 0)
 
 	// Quick return
@@ -72,6 +74,7 @@ func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo)
 
 	index := 0
 	spyreDevices := convertToSpyrePCIDevices(hwDevices)
+	vfEnabled := hasVfDevice(spyreDevices) && !disableVirtualFunction
 	// To remove this logic when device plugin's PseudoPciDevice supports numa info mock.
 	var pseudoNumMap map[string]string
 	if pciTopo != nil && utils.IsPseudoDeviceMode() {
@@ -79,7 +82,7 @@ func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo)
 	}
 	for _, device := range spyreDevices {
 		deviceName := utils.PciAddressToDeviceName(device.GetPciAddr())
-		attributes := getAttributes(index, device, pciTopo, pseudoNumMap)
+		attributes := getAttributes(index, device, pciTopo, pseudoNumMap, vfEnabled)
 		capacities := getDeviceCapacity(device)
 		resourceDevice := resourceapi.Device{
 			Name:       deviceName,
@@ -94,6 +97,17 @@ func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo)
 		index += 1
 	}
 	return alldevices
+}
+
+// hasVfDevice reports whether any discovered device is a Spyre VF, which
+// indicates that VF carving is currently active on this node.
+func hasVfDevice(devices []PciDevice) bool {
+	for _, device := range devices {
+		if device.GetProductID() == string(ProductIDVf) {
+			return true
+		}
+	}
+	return false
 }
 
 func convertToSpyrePCIDevices(devices []*ghw.PCIDevice) []PciDevice {
@@ -115,14 +129,14 @@ func convertToSpyrePCIDevices(devices []*ghw.PCIDevice) []PciDevice {
 }
 
 func getAttributes(index int, spyreDevice PciDevice,
-	topo *pcitopo.Pcitopo, pseudoNumaMap map[string]string) map[resourceapi.QualifiedName]resourceapi.DeviceAttribute {
+	topo *pcitopo.Pcitopo, pseudoNumaMap map[string]string, vfEnabled bool) map[resourceapi.QualifiedName]resourceapi.DeviceAttribute {
 	attributes := make(map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, 0)
 	attributes[DeviceIndexAttribute] = GetIntDeviceAttribute(index)
 	attributes[DriverVersionAttribute] = GetStringDeviceAttribute(cst.DriverVersion)
 
-	addSpyreBasicAttributes(attributes, spyreDevice)
+	addSpyreBasicAttributes(attributes, spyreDevice, vfEnabled)
 	key := spyreDevice.GetPciAddr()
-	if topo != nil && topo.Devices != nil {
+	if topo != nil && (topo.Devices != nil || topo.SpyreVfDevices != nil) {
 		addTopologyMetadata(attributes, key, topo, pseudoNumaMap)
 	}
 	return attributes
@@ -135,7 +149,7 @@ func getDeviceCapacity(device PciDevice) map[resourceapi.QualifiedName]resourcea
 	return capacities
 }
 
-func addSpyreBasicAttributes(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, device PciDevice) {
+func addSpyreBasicAttributes(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, device PciDevice, vfEnabled bool) {
 	attributes[VendorAttribute] = GetStringDeviceAttribute(device.GetVendor())
 	attributes[DriverAttribute] = GetStringDeviceAttribute(device.GetDriver())
 	attributes[ProductIdAttribute] = GetStringDeviceAttribute(device.GetProductID())
@@ -145,11 +159,17 @@ func addSpyreBasicAttributes(attributes map[resourceapi.QualifiedName]resourceap
 	attributes[SubClassAttribute] = GetStringDeviceAttribute(device.GetSubClass())
 	attributes[VfIdAttribute] = GetIntDeviceAttribute(device.GetVFID())
 	attributes[NumaInfoAttribute] = GetStringDeviceAttribute(device.GetNumaInfo())
+	attributes[PciFunctionIndexAttribute] = GetIntDeviceAttribute(utils.GetPCIFunctionIndex(device.GetPciAddr()))
+	attributes[VfEnabledAttribute] = GetBoolDeviceAttribute(vfEnabled)
 }
 
 func addTopologyMetadata(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute,
 	key string, topo *pcitopo.Pcitopo, pseudoNumaMap map[string]string) {
-	if device, found := topo.Devices[key]; found {
+	device, found := topo.Devices[key]
+	if !found {
+		device, found = topo.SpyreVfDevices[key]
+	}
+	if found {
 		attributes[LinkSpeedAttribute] = GetStringDeviceAttribute(device.Linkspeed)
 		attributes[NumaInfoAttribute] = GetStringDeviceAttribute(strconv.Itoa(device.NumaNode))
 		if device.Metadata != nil {

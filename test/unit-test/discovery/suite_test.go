@@ -38,7 +38,7 @@ func TestAPIs(t *testing.T) {
 var _ = BeforeSuite(func() {
 	os.Setenv("PSEUDO_DEVICE_MODE", "1")
 	var err error
-	deviceDiscovery, err = NewDeviceDiscovery(TopologyFilePath)
+	deviceDiscovery, err = NewDeviceDiscovery(TopologyFilePath, false)
 	Expect(err).To(BeNil())
 })
 

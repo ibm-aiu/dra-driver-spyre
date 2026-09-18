@@ -49,16 +49,18 @@ var (
 )
 
 type DeviceDiscovery struct {
-	topologyFile string
+	topologyFile           string
+	disableVirtualFunction bool
 }
 
-func NewDeviceDiscovery(topologyFile string) (*DeviceDiscovery, error) {
+func NewDeviceDiscovery(topologyFile string, disableVirtualFunction bool) (*DeviceDiscovery, error) {
 	return &DeviceDiscovery{
-		topologyFile: topologyFile,
+		topologyFile:           topologyFile,
+		disableVirtualFunction: disableVirtualFunction,
 	}, nil
 }
 
-// GetAllocatableDevices is called only once at NewDeviceState
+// GetAllocatableDevices is called only once at NewDeviceState.
 func (d *DeviceDiscovery) GetAllocatableDevices() (types.AllocatableDevices, error) {
 	var devices []*ghw.PCIDevice
 	topo, err := topology.GetPciTopology(d.topologyFile)
@@ -67,6 +69,10 @@ func (d *DeviceDiscovery) GetAllocatableDevices() (types.AllocatableDevices, err
 			for _, dev := range topo.GetDevices() {
 				devices = append(devices,
 					types.GeneratePseudoDevice(dev, types.ProductIDPf))
+			}
+			for vfAddr := range topo.SpyreVfDevices {
+				devices = append(devices,
+					types.GeneratePseudoDevice(vfAddr, types.ProductIDVf))
 			}
 		} else {
 			klog.Warningf("cannot get PCI topology config: %v, use default pseudo devices", err)
@@ -91,7 +97,7 @@ func (d *DeviceDiscovery) GetAllocatableDevices() (types.AllocatableDevices, err
 	if len(devices) == 0 {
 		klog.Warningf("discoverDevices(): no PCI device found")
 	}
-	return types.NewAllocatableDevices(devices, topo), nil
+	return types.NewAllocatableDevices(devices, topo, d.disableVirtualFunction), nil
 }
 
 // discoverTargetDevices lists all devices from hwloc and filters only target device codes
