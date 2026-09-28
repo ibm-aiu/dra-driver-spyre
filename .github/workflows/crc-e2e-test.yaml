@@ -38,7 +38,7 @@ permissions:
 
 jobs:
   crc-e2e-test:
-    uses: ibm-aiu/spyre-operator-actions/.github/workflows/crc-e2e-test.yaml@main
+    uses: ibm-aiu/spyre-operator-actions/.github/workflows/crc-e2e-test.yaml@sunya-ch-exporter
     with:
       runner: ${{ inputs.runner }}
       branch-name: ${{ inputs.branch-name }}
