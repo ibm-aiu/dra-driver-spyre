@@ -111,6 +111,12 @@ func (dp *DeviceDiscovery) discoverTargetDevices() ([]*ghw.PCIDevice, error) {
 		if !isSupportedDevice(device) {
 			continue
 		}
+		// Do not advertise a device whose vfio device file cannot be resolved.
+		// This also rejects vfio-noiommu groups, which bypass IOMMU DMA isolation.
+		if _, _, err := utils.GetVFIODeviceFile(device.Address); err != nil {
+			klog.Warningf("skipping device %s: %v", device.Address, err)
+			continue
+		}
 		vendor := device.Vendor
 		vendorName := vendor.Name
 		if len(vendor.Name) > maxVendorNameLen {
