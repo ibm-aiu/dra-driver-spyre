@@ -89,8 +89,6 @@ spec:
           mountPath: {{ .Values.kubeletPlugin.kubeletPluginsDirectoryPath | quote }}
         - name: cdi
           mountPath: /var/run/cdi
-        - name: log
-          mountPath: /var/log
         - name: hwdata
           mountPath: "/usr/share/hwdata"
         - name: dra-driver-config
@@ -108,9 +106,6 @@ spec:
       - name: cdi
         hostPath:
           path: /var/run/cdi
-      - name: log
-        hostPath:
-          path: /var/log
       - name: hwdata
         hostPath:
           path: "/usr/share/hwdata"

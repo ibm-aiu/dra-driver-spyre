@@ -140,10 +140,12 @@ func GetVFIODeviceFile(dev string) (devFileHost, devFileContainer string, err er
 	if errName == nil {
 		vName := strings.TrimSpace(string(vfioName))
 
-		// if the iommu group name == vfio-noiommu then we are in a VM, adjust path to vfio device
+		// vfio-noiommu devices bypass IOMMU DMA isolation entirely — reject them
+		// to prevent a workload container from issuing arbitrary DMA to host memory.
 		if vName == "vfio-noiommu" {
-			linkName = filepath.Join(filepath.Dir(linkName), "noiommu-"+filepath.Base(linkName))
-			devFileHost = filepath.Join(devDir, "vfio", filepath.Base(linkName))
+			err = fmt.Errorf("GetVFIODeviceFile(): device %s is bound to a vfio-noiommu IOMMU group; "+
+				"IOMMU must be enabled for Spyre device allocation", dev)
+			return devFileHost, devFileContainer, err
 		}
 	}
 
