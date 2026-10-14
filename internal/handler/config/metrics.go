@@ -68,6 +68,6 @@ func WritePodInfo(mntHostPaths []string, pod corev1.Pod) error {
 func CreateNewMetricsFolder(metricsHostPath, configHostPath string) (string, error) {
 	uuidValue := GetUuidFromPath(configHostPath)
 	newFolder := filepath.Join(metricsHostPath, uuidValue)
-	err := utils.CreateFolderIfNotExists(newFolder)
+	err := utils.CreateWritableFolderIfNotExists(newFolder)
 	return newFolder, err
 }
