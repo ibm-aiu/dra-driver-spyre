@@ -52,6 +52,13 @@ func CreateFolderIfNotExists(path string) error {
 	return nil
 }
 
+func CreateWritableFolderIfNotExists(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return os.MkdirAll(path, os.ModeDir|0775)
+	}
+	return nil
+}
+
 func GetEnvOrDefault(key, defaultValue string) string {
 	value := os.Getenv(key)
 	if value == "" {
