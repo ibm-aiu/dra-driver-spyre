@@ -162,14 +162,20 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 	}
 
 	s.unprepareDevices(claimUID, preparedClaims[claimUID])
-	err := s.CDI.DeleteClaimSpec(claimUID)
-	if err != nil {
-		return fmt.Errorf("unable to delete CDI spec file for claim: %v", err)
-	}
 
+	// Remove the claim from the checkpoint and persist it to disk before deleting
+	// the CDI spec file. This ordering ensures that if the process crashes between
+	// these two steps, the claim is already gone from the checkpoint on restart.
+	// The orphaned CDI spec file left behind is harmless and can be cleaned up by
+	// CleanZombieConfigFolders. The reverse order would leave a checkpoint entry
+	// referencing a missing spec, which is harder to recover from.
 	delete(preparedClaims, claimUID)
 	if err := s.checkpointManager.CreateCheckpoint(cst.DriverPluginCheckpointFile, checkpoint); err != nil {
 		return fmt.Errorf("unable to sync to checkpoint: %v", err)
+	}
+
+	if err := s.CDI.DeleteClaimSpec(claimUID); err != nil {
+		return fmt.Errorf("unable to delete CDI spec file for claim: %v", err)
 	}
 
 	return nil
@@ -233,7 +239,9 @@ func (s *DeviceState) unprepareDevices(claimUID string, devices types.PreparedDe
 	if err != nil {
 		klog.Warningf("unable to read spec claim %s: %v, cannot delete config file", claimUID, err)
 	}
-	s.CDI.DeleteConfigFile(spec)
+	if spec != nil {
+		s.CDI.DeleteConfigFile(*spec)
+	}
 }
 
 // GetOpaqueDeviceConfigs returns an ordered list of configs specified for a device request in a resource claim.
