@@ -284,7 +284,7 @@ func (cdi *CDIHandler) CleanZombieConfigFolders() error {
 
 // DeleteConfigFile removes generated senlig config file.
 // This function is called at Unprepare.
-func (cdi *CDIHandler) DeleteConfigFile(spec *cdiapi.Spec) {
+func (cdi *CDIHandler) DeleteConfigFile(spec cdiapi.Spec) {
 	mnts := spec.ContainerEdits.Mounts
 	for _, mnt := range mnts {
 		if IsHostMountedFile(mnt.ContainerPath) {

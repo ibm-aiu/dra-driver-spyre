@@ -63,7 +63,7 @@ var _ = Describe("Senlib Config", Ordered, func() {
 	It("prepare - unprepare", func() {
 		mnts := GenerateSenlibConfig(pciAddresses)
 		CheckPathExists(mnts[0].HostPath, true)
-		spec := &cdiapi.Spec{
+		spec := cdiapi.Spec{
 			Spec: &cdispec.Spec{
 				ContainerEdits: cdispec.ContainerEdits{
 					Mounts: mnts,
