@@ -35,6 +35,18 @@ const (
 
 	pfDeviceClassName = "spyre-pf"
 	vfDeviceClassName = "spyre-standard-vf"
+
+	// Bare attribute key names as stored in the ResourceSlice map (no domain prefix).
+	pciAddressAttribute = "pciAddress"
+	tier0GroupAttribute = "tier0Group"
+	tier1GroupAttribute = "tier1Group"
+	tier2GroupAttribute = "tier2Group"
+
+	// Fully-qualified matchAttribute values used in ResourceClaimTemplate constraints.
+	// These enforce that the scheduler picks devices that all share the same tier group.
+	Tier0MatchAttribute = "spyre.ibm.com/tier0Group"
+	Tier1MatchAttribute = "spyre.ibm.com/tier1Group"
+	Tier2MatchAttribute = "spyre.ibm.com/tier2Group"
 )
 
 const ResourceClaimTemplate = `
@@ -127,6 +139,46 @@ func (c *ResourceClaimTemplateData) SetProductId(productId string) *ResourceClai
 	return c
 }
 
+// SetDeviceClassName overrides the DeviceClass used by the claim template.
+func (c *ResourceClaimTemplateData) SetDeviceClassName(className string) *ResourceClaimTemplateData {
+	c.DeviceClassName = className
+	return c
+}
+
+// SetPfTierAllocation configures the claim for PF topology-aware allocation at the
+// given tier (0, 1, or 2).  It selects the spyre-pf DeviceClass and sets the
+// matchAttribute so the scheduler must pick devices from the same tier group.
+func (c *ResourceClaimTemplateData) SetPfTierAllocation(tier int) *ResourceClaimTemplateData {
+	c.DeviceClassName = pfDeviceClassName
+	c.ProductId = PfProductId
+	switch tier {
+	case 0:
+		c.MatchAttribute = Tier0MatchAttribute
+	case 1:
+		c.MatchAttribute = Tier1MatchAttribute
+	default:
+		c.MatchAttribute = Tier2MatchAttribute
+	}
+	return c
+}
+
+// SetVfTierAllocation configures the claim for VF topology-aware allocation at the
+// given tier (0, 1, or 2).  It selects the spyre-standard-vf DeviceClass and sets
+// the matchAttribute so the scheduler must pick devices from the same tier group.
+func (c *ResourceClaimTemplateData) SetVfTierAllocation(tier int) *ResourceClaimTemplateData {
+	c.DeviceClassName = vfDeviceClassName
+	c.ProductId = VfProductId
+	switch tier {
+	case 0:
+		c.MatchAttribute = Tier0MatchAttribute
+	case 1:
+		c.MatchAttribute = Tier1MatchAttribute
+	default:
+		c.MatchAttribute = Tier2MatchAttribute
+	}
+	return c
+}
+
 // SetMatchAttribute sets an attribute to match in constraints
 func (c *ResourceClaimTemplateData) SetMatchAttribute(matchAttribute string) *ResourceClaimTemplateData {
 	c.MatchAttribute = matchAttribute
@@ -160,6 +212,56 @@ func BuildPCISpecificResourceClaimTemplate(ctx context.Context, dynClient *dynam
 	name, namespace string, pciAddress string) {
 	data := BasicResourceClaimTemplateData(name, namespace).SetPCIAddressSelector(pciAddress)
 	BuildResourceClaimTemplate(ctx, dynClient, discoClient, data)
+}
+
+// CheckAllocationsShareTierGroup reads the ResourceSlice and verifies that all
+// allocated PCI addresses share the same tier group attribute value at the
+// requested tier (0, 1, or 2).  It returns the common group ID so callers can
+// perform further assertions if needed.
+func CheckAllocationsShareTierGroup(ctx context.Context, k8sClientset *kubernetes.Clientset,
+	allocations []string, tier int) string {
+	Expect(tier).To(BeElementOf(0, 1, 2), "tier must be 0, 1, or 2")
+
+	var attrKey string
+	switch tier {
+	case 0:
+		attrKey = tier0GroupAttribute
+	case 1:
+		attrKey = tier1GroupAttribute
+	default:
+		attrKey = tier2GroupAttribute
+	}
+
+	slices := ListResourceSlices(ctx, k8sClientset)
+	// Build address → tierXGroup map from the ResourceSlice attribute data.
+	groupByAddr := make(map[string]string)
+	for _, slice := range slices {
+		for _, dev := range slice.Spec.Devices {
+			pciAddrAttr, ok := dev.Attributes[pciAddressAttribute]
+			if !ok || pciAddrAttr.StringValue == nil {
+				continue
+			}
+			groupAttr, ok := dev.Attributes[resourcev1.QualifiedName(attrKey)]
+			if !ok || groupAttr.StringValue == nil {
+				continue
+			}
+			groupByAddr[*pciAddrAttr.StringValue] = *groupAttr.StringValue
+		}
+	}
+
+	var commonGroup string
+	for _, addr := range allocations {
+		g, ok := groupByAddr[addr]
+		Expect(ok).To(BeTrue(), "address %s not found in ResourceSlice tier%d attribute", addr, tier)
+		if commonGroup == "" {
+			commonGroup = g
+		} else {
+			Expect(g).To(Equal(commonGroup),
+				"address %s has tier%d group %q, expected %q (same group as %s)",
+				addr, tier, g, commonGroup, allocations[0])
+		}
+	}
+	return commonGroup
 }
 
 func ListResourceSlices(ctx context.Context, k8sClientset *kubernetes.Clientset) []resourcev1.ResourceSlice {
