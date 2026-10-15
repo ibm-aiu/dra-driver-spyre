@@ -54,6 +54,18 @@ const (
 
 	VfNumberCapacity   = "vfNum"
 	MemorySizeCapacity = "memory"
+
+	// Tier group attributes — each holds the canonical PCI address of the
+	// group representative at that tier level.  Devices sharing the same value
+	// belong to the same topology-aware group and can be co-allocated for
+	// tensor-parallel workloads.
+	//
+	//   tier0Group: same PCI switch (peers_0)
+	//   tier1Group: ≤1 PCI hop away (peers_0 ∪ peers_1)
+	//   tier2Group: ≤2 PCI hops away (peers_0 ∪ peers_1 ∪ peers_2)
+	Tier0GroupAttribute = "tier0Group"
+	Tier1GroupAttribute = "tier1Group"
+	Tier2GroupAttribute = "tier2Group"
 )
 
 type AllocatableDevices map[string]SpyreDevice
@@ -77,12 +89,17 @@ func NewAllocatableDevices(hwDevices []*ghw.PCIDevice, pciTopo *pcitopo.Pcitopo,
 	vfEnabled := hasVfDevice(spyreDevices) && !disableVirtualFunction
 	// To remove this logic when device plugin's PseudoPciDevice supports numa info mock.
 	var pseudoNumMap map[string]string
-	if pciTopo != nil && utils.IsPseudoDeviceMode() {
-		pseudoNumMap = pcitopo.GenerateNumaInfoMapFromTopo(*pciTopo)
+	var tierGroups *pcitopo.TierGroups
+	if pciTopo != nil {
+		if utils.IsPseudoDeviceMode() {
+			pseudoNumMap = pcitopo.GenerateNumaInfoMapFromTopo(*pciTopo)
+		}
+		tg := pcitopo.GenerateTierGroupsFromTopo(*pciTopo)
+		tierGroups = &tg
 	}
 	for _, device := range spyreDevices {
 		deviceName := utils.PciAddressToDeviceName(device.GetPciAddr())
-		attributes := getAttributes(index, device, pciTopo, pseudoNumMap, vfEnabled)
+		attributes := getAttributes(index, device, pciTopo, pseudoNumMap, tierGroups, vfEnabled)
 		capacities := getDeviceCapacity(device)
 		resourceDevice := resourceapi.Device{
 			Name:       deviceName,
@@ -129,7 +146,7 @@ func convertToSpyrePCIDevices(devices []*ghw.PCIDevice) []PciDevice {
 }
 
 func getAttributes(index int, spyreDevice PciDevice,
-	topo *pcitopo.Pcitopo, pseudoNumaMap map[string]string, vfEnabled bool) map[resourceapi.QualifiedName]resourceapi.DeviceAttribute {
+	topo *pcitopo.Pcitopo, pseudoNumaMap map[string]string, tierGroups *pcitopo.TierGroups, vfEnabled bool) map[resourceapi.QualifiedName]resourceapi.DeviceAttribute {
 	attributes := make(map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, 0)
 	attributes[DeviceIndexAttribute] = GetIntDeviceAttribute(index)
 	attributes[DriverVersionAttribute] = GetStringDeviceAttribute(cst.DriverVersion)
@@ -137,7 +154,7 @@ func getAttributes(index int, spyreDevice PciDevice,
 	addSpyreBasicAttributes(attributes, spyreDevice, vfEnabled)
 	key := spyreDevice.GetPciAddr()
 	if topo != nil && (topo.Devices != nil || topo.SpyreVfDevices != nil) {
-		addTopologyMetadata(attributes, key, topo, pseudoNumaMap)
+		addTopologyMetadata(attributes, key, topo, pseudoNumaMap, tierGroups)
 	}
 	return attributes
 }
@@ -164,36 +181,66 @@ func addSpyreBasicAttributes(attributes map[resourceapi.QualifiedName]resourceap
 }
 
 func addTopologyMetadata(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute,
-	key string, topo *pcitopo.Pcitopo, pseudoNumaMap map[string]string) {
-	device, found := topo.Devices[key]
-	if !found {
-		device, found = topo.SpyreVfDevices[key]
+	key string, topo *pcitopo.Pcitopo, pseudoNumaMap map[string]string, tierGroups *pcitopo.TierGroups) {
+	if device, found := lookupTopoDevice(topo, key); found {
+		addDeviceTopoAttributes(attributes, device)
 	}
-	if found {
-		attributes[LinkSpeedAttribute] = GetStringDeviceAttribute(device.Linkspeed)
-		attributes[NumaInfoAttribute] = GetStringDeviceAttribute(strconv.Itoa(device.NumaNode))
-		if device.Metadata != nil {
-			if clock, ok := device.Metadata[pcitopo.ClockKey]; ok {
-				if clockMap, ok := clock.(map[string]string); ok {
-					addTopologyMetadataClock(attributes, clockMap)
-				}
-			}
-			if memory, ok := device.Metadata[pcitopo.MemoryKey]; ok {
-				if memoryMap, ok := memory.(map[string]any); ok {
-					addTopologyMetadataMemory(attributes, memoryMap)
-				}
-			}
-		}
-		// override
-		attributes[IsPfAttribute] = GetBoolDeviceAttribute(device.IsPf)
-	}
+	overridePseudoNuma(attributes, pseudoNumaMap, key)
+	addTierGroupAttributes(attributes, tierGroups, key)
+}
 
-	// PseudoPciDevice's GetNumaInfo always return zero. Need to override the numa info.
-	if pseudoNumaMap != nil {
-		// To remove this logic when device plugin's PseudoPciDevice supports numa info mock.
-		if numa, found := pseudoNumaMap[key]; found {
-			attributes[NumaInfoAttribute] = GetStringDeviceAttribute(numa)
-		}
+// lookupTopoDevice returns the Device entry for key from PF or VF maps.
+func lookupTopoDevice(topo *pcitopo.Pcitopo, key string) (pcitopo.Device, bool) {
+	if dev, ok := topo.Devices[key]; ok {
+		return dev, true
+	}
+	dev, ok := topo.SpyreVfDevices[key]
+	return dev, ok
+}
+
+// addDeviceTopoAttributes stamps link speed, numa, metadata and isPf onto attributes.
+func addDeviceTopoAttributes(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, device pcitopo.Device) {
+	attributes[LinkSpeedAttribute] = GetStringDeviceAttribute(device.Linkspeed)
+	attributes[NumaInfoAttribute] = GetStringDeviceAttribute(strconv.Itoa(device.NumaNode))
+	addTopologyMetadataFromMap(attributes, device.Metadata)
+	attributes[IsPfAttribute] = GetBoolDeviceAttribute(device.IsPf)
+}
+
+// addTopologyMetadataFromMap extracts clock and memory sub-maps from metadata.
+func addTopologyMetadataFromMap(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, metadata map[string]any) {
+	if metadata == nil {
+		return
+	}
+	if clockMap, ok := metadata[pcitopo.ClockKey].(map[string]string); ok {
+		addTopologyMetadataClock(attributes, clockMap)
+	}
+	if memoryMap, ok := metadata[pcitopo.MemoryKey].(map[string]any); ok {
+		addTopologyMetadataMemory(attributes, memoryMap)
+	}
+}
+
+// overridePseudoNuma replaces the numaInfo attribute when a pseudo numa map is present.
+// TODO: remove when device plugin's PseudoPciDevice supports numa info mock.
+func overridePseudoNuma(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, pseudoNumaMap map[string]string, key string) {
+	if numa, found := pseudoNumaMap[key]; found {
+		attributes[NumaInfoAttribute] = GetStringDeviceAttribute(numa)
+	}
+}
+
+// addTierGroupAttributes stamps tier0/1/2 group IDs onto attributes.
+func addTierGroupAttributes(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, tierGroups *pcitopo.TierGroups, key string) {
+	if tierGroups == nil {
+		return
+	}
+	setIfPresent(attributes, Tier0GroupAttribute, tierGroups.Tier0[key])
+	setIfPresent(attributes, Tier1GroupAttribute, tierGroups.Tier1[key])
+	setIfPresent(attributes, Tier2GroupAttribute, tierGroups.Tier2[key])
+}
+
+// setIfPresent sets a string attribute only when value is non-empty.
+func setIfPresent(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, key resourceapi.QualifiedName, value string) {
+	if value != "" {
+		attributes[key] = GetStringDeviceAttribute(value)
 	}
 }
 
