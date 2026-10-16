@@ -37,7 +37,7 @@ func getPreparedDevices(pciAddresses []string) types.PreparedDevices {
 	for _, pciAddress := range pciAddresses {
 		config := configapi.DefaultParams()
 		deviceName := PciAddressToDeviceName(pciAddress)
-		pciDevice := types.GeneratePseudoDevice(pciAddress, types.ProductIDPf)
+		pciDevice := types.GeneratePseudoDevice(pciAddress, types.ProductIDPf, 0)
 		pseudoDevice := types.NewPseudoPciDevice(pciDevice)
 		device := &types.PreparedDevice{
 			Device: drapbv1.Device{

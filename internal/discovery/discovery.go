@@ -19,6 +19,7 @@ import (
 	"strconv"
 
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/topology"
+	"github.com/ibm-aiu/dra-driver-spyre/pkg/topology/types/pcitopo"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/types"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/utils"
 	"github.com/jaypipes/ghw"
@@ -65,30 +66,9 @@ func (d *DeviceDiscovery) GetAllocatableDevices() (types.AllocatableDevices, err
 	var devices []*ghw.PCIDevice
 	topo, err := topology.GetPciTopology(d.topologyFile)
 	if utils.IsPseudoDeviceMode() {
-		if topo != nil {
-			for _, dev := range topo.GetDevices() {
-				devices = append(devices,
-					types.GeneratePseudoDevice(dev, types.ProductIDPf))
-			}
-			for vfAddr := range topo.SpyreVfDevices {
-				devices = append(devices,
-					types.GeneratePseudoDevice(vfAddr, types.ProductIDVf))
-			}
-		} else {
-			klog.Warningf("cannot get PCI topology config: %v, use default pseudo devices", err)
-			devices = []*ghw.PCIDevice{
-				// spyre_pf devices
-				types.GeneratePseudoDevice("0000:1a:00.0", types.ProductIDPf),
-				types.GeneratePseudoDevice("0000:1c:00.0", types.ProductIDPf),
-				types.GeneratePseudoDevice("0000:1d:00.0", types.ProductIDPf),
-				types.GeneratePseudoDevice("0000:1e:00.0", types.ProductIDPf),
-				types.GeneratePseudoDevice("0000:3d:00.0", types.ProductIDPf),
-				types.GeneratePseudoDevice("0000:3f:00.0", types.ProductIDPf),
-				types.GeneratePseudoDevice("0000:40:00.0", types.ProductIDPf),
-				types.GeneratePseudoDevice("0000:41:00.0", types.ProductIDPf),
-			}
-		}
+		devices = d.discoverPseudoDevices(topo, err)
 	} else {
+		var err error
 		devices, err = d.discoverTargetDevices()
 		if err != nil {
 			return nil, fmt.Errorf("failed to discover target devices: %w", err)
@@ -98,6 +78,52 @@ func (d *DeviceDiscovery) GetAllocatableDevices() (types.AllocatableDevices, err
 		klog.Warningf("discoverDevices(): no PCI device found")
 	}
 	return types.NewAllocatableDevices(devices, topo, d.disableVirtualFunction), nil
+}
+
+func (d *DeviceDiscovery) discoverPseudoDevices(topo *pcitopo.Pcitopo, topoErr error) []*ghw.PCIDevice {
+	if topo != nil {
+		return d.generatePseudoDevicesFromTopo(topo)
+	}
+	klog.Warningf("cannot get PCI topology config: %v, use default pseudo devices", topoErr)
+	return defaultPseudoDevices()
+}
+
+func (d *DeviceDiscovery) generatePseudoDevicesFromTopo(topo *pcitopo.Pcitopo) []*ghw.PCIDevice {
+	capacity := len(topo.GetDevices()) + len(topo.SpyreVfDevices)
+	devices := make([]*ghw.PCIDevice, 0, capacity)
+	pseudoNumMap := pcitopo.GenerateNumaInfoMapFromTopo(*topo)
+	for _, dev := range topo.GetDevices() {
+		numa := lookupNuma(pseudoNumMap, dev)
+		devices = append(devices, types.GeneratePseudoDevice(dev, types.ProductIDPf, numa))
+	}
+	for vfAddr := range topo.SpyreVfDevices {
+		numa := lookupNuma(pseudoNumMap, vfAddr)
+		devices = append(devices, types.GeneratePseudoDevice(vfAddr, types.ProductIDVf, numa))
+	}
+	return devices
+}
+
+func lookupNuma(pseudoNumMap map[string]string, pciAddr string) int {
+	if numaStr, found := pseudoNumMap[pciAddr]; found {
+		if n, err := strconv.Atoi(numaStr); err == nil {
+			return n
+		}
+	}
+	return 0
+}
+
+func defaultPseudoDevices() []*ghw.PCIDevice {
+	return []*ghw.PCIDevice{
+		// spyre_pf devices
+		types.GeneratePseudoDevice("0000:1a:00.0", types.ProductIDPf, 0),
+		types.GeneratePseudoDevice("0000:1c:00.0", types.ProductIDPf, 0),
+		types.GeneratePseudoDevice("0000:1d:00.0", types.ProductIDPf, 0),
+		types.GeneratePseudoDevice("0000:1e:00.0", types.ProductIDPf, 0),
+		types.GeneratePseudoDevice("0000:3d:00.0", types.ProductIDPf, 0),
+		types.GeneratePseudoDevice("0000:3f:00.0", types.ProductIDPf, 0),
+		types.GeneratePseudoDevice("0000:40:00.0", types.ProductIDPf, 0),
+		types.GeneratePseudoDevice("0000:41:00.0", types.ProductIDPf, 0),
+	}
 }
 
 // discoverTargetDevices lists all devices from hwloc and filters only target device codes
