@@ -32,7 +32,7 @@ func makeAllocatable(pciAddresses ...string) types.AllocatableDevices {
 	alloc := make(types.AllocatableDevices)
 	for _, addr := range pciAddresses {
 		name := utils.PciAddressToDeviceName(addr)
-		pseudo := types.NewPseudoPciDevice(types.GeneratePseudoDevice(addr, types.ProductIDPf))
+		pseudo := types.NewPseudoPciDevice(types.GeneratePseudoDevice(addr, types.ProductIDPf, 0))
 		alloc[name] = types.SpyreDevice{
 			ProductID: types.ProductIDPf,
 			PciDevice: pseudo,

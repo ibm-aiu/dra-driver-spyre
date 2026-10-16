@@ -6,8 +6,11 @@
 package types
 
 import (
+	"strconv"
+
 	cst "github.com/ibm-aiu/dra-driver-spyre/pkg/const"
 	"github.com/jaypipes/ghw"
+	ghw_topology "github.com/jaypipes/ghw/pkg/topology"
 	"github.com/jaypipes/pcidb"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	cdispec "tags.cncf.io/container-device-interface/specs-go"
@@ -16,12 +19,18 @@ import (
 type PseudoPciDevice struct {
 	PciAddress string
 	ProductID  string
+	Numa       string
 }
 
 func NewPseudoPciDevice(dev *ghw.PCIDevice) PciDevice {
+	numa := "0"
+	if dev != nil && dev.Node != nil {
+		numa = strconv.Itoa(dev.Node.ID)
+	}
 	return PseudoPciDevice{
 		PciAddress: dev.Address,
 		ProductID:  dev.Product.ID,
+		Numa:       numa,
 	}
 }
 
@@ -99,13 +108,22 @@ func (d PseudoPciDevice) GetVFID() int {
 }
 
 func (d PseudoPciDevice) GetNumaInfo() string {
+	if d.Numa != "" {
+		return d.Numa
+	}
 	return "0"
 }
 
-func GeneratePseudoDevice(address string, productId ProductID) *ghw.PCIDevice {
+func GeneratePseudoDevice(address string, productId ProductID, numaNode int) *ghw.PCIDevice {
 	pId := productId
 	if len(pId) == 0 {
 		pId = ProductIDPf // default
+	}
+	var node *ghw_topology.Node
+	if numaNode >= 0 {
+		node = &ghw_topology.Node{
+			ID: numaNode,
+		}
 	}
 	return &ghw.PCIDevice{
 		Address: address,
@@ -113,5 +131,6 @@ func GeneratePseudoDevice(address string, productId ProductID) *ghw.PCIDevice {
 		Product: &pcidb.Product{ID: string(pId), Name: "unknown"},
 		Class:   &pcidb.Class{ID: "00"},
 		Driver:  "pseudoDriver",
+		Node:    node,
 	}
 }
