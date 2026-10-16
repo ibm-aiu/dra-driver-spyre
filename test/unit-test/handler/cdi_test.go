@@ -44,7 +44,7 @@ func getPreparedDevices(pciAddresses []string) types.PreparedDevices {
 				RequestNames: []string{""},
 				PoolName:     "",
 				DeviceName:   deviceName,
-				CDIDeviceIDs: GetClaimDevices([]string{deviceName}),
+				CdiDeviceIds: GetClaimDevices([]string{deviceName}),
 			},
 			Config:        config.Config,
 			PciAddress:    pseudoDevice.GetPciAddr(),
