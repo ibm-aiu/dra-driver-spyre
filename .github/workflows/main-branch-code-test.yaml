@@ -35,4 +35,4 @@ jobs:
     needs: unit-test
     uses: ibm-aiu/dra-driver-spyre/.github/workflows/e2e-test-kind.yaml@main
     with:
-      node_image: kindest/node:v1.34.0
+      node_image: kindest/node:v1.35.0

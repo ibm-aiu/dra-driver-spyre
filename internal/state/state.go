@@ -211,7 +211,7 @@ func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (types.Pr
 				RequestNames: []string{result.Request},
 				PoolName:     result.Pool,
 				DeviceName:   result.Device,
-				CDIDeviceIDs: handler.GetClaimDevices([]string{result.Device}),
+				CdiDeviceIds: handler.GetClaimDevices([]string{result.Device}),
 			},
 			Config:        config.Config,
 			PciAddress:    allocatableDevice.GetPciAddr(),
