@@ -191,6 +191,43 @@ e2e-test: ginkgo ## Run e2e test on the cluster pointed to in the current KUBECO
 	$(info E2E_KUBECONFIG is set to $(E2E_KUBECONFIG))
 	$(GINKGO) run -race -v ./test/e2e-test/...
 
+# Device health e2e: the driver runs next to the test-only spyre health service mock.
+HEALTH_MOCK_IMAGE_NAME ?= $(REGISTRY)/spyre-health-mock
+HEALTH_MOCK_IMAGE      ?= $(HEALTH_MOCK_IMAGE_NAME):$(IMAGE_TAG)
+
+.PHONY: docker-build-health-mock
+docker-build-health-mock: vendor ## Build the test-only spyre health service mock image
+	$(DOCKER) build $(DOCKER_BUILD_OPTS) --pull \
+	--tag $(HEALTH_MOCK_IMAGE) \
+	--build-arg BUILDER_IMAGE="$(BUILDER_IMAGE)" \
+	--build-arg GOTOOLCHAIN=$(GOTOOLCHAIN) \
+	--file $(REPO_ROOT)/test/healthmock/Dockerfile $(CURDIR)
+
+.PHONY: load-health-mock
+load-health-mock: ## Load the local health service mock image to Kind cluster
+	LOCALBIN=$(LOCALBIN) CONTAINER_TOOL=$(DOCKER) DRIVER_NAME=$(DRIVER_NAME) DRIVER_IMAGE=$(HEALTH_MOCK_IMAGE) $(REPO_ROOT)/hack/kind/load-driver-image-into-kind.sh
+
+.PHONY: deploy-driver-health-mock
+deploy-driver-health-mock: helm ## Deploy driver with the health service mock sidecar to Kind cluster
+	@# helm replaces lists on --set, so render the mock image into a values file instead
+	mkdir -p $(LOCALBIN)
+	sed 's#image: docker.io/spyre-operator/spyre-health-mock:latest#image: $(HEALTH_MOCK_IMAGE)#' \
+		${REPO_ROOT}/test/e2e-test/values-health-mock.yaml > $(LOCALBIN)/values-health-mock.yaml
+	$(HELM) upgrade -i \
+	--create-namespace \
+	--namespace dra-driver-spyre \
+	--set image.pullPolicy=IfNotPresent \
+	--set image.repository=$(IMAGE_NAME) \
+	--set image.tag="$(VERSION)" \
+	-f $(LOCALBIN)/values-health-mock.yaml \
+	dra-driver-spyre \
+	${REPO_ROOT}/deployments/helm/dra-driver-spyre
+
+.PHONY: e2e-test-health
+e2e-test-health: ginkgo ## Run the device health e2e test (driver deployed with deploy-driver-health-mock)
+	$(info E2E_KUBECONFIG is set to $(E2E_KUBECONFIG))
+	E2E_HEALTH_MOCK=1 $(GINKGO) run -race -v --focus "device health e2e test" ./test/e2e-test/...
+
 ##@ Development Targets
 
 .PHONY: fmt

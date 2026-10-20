@@ -65,16 +65,22 @@ spec:
           {{- if gt .Count 0 }}
           count: {{ .Count }}
           {{- end}}
-          {{- if .PCIAddress }}
+          {{- if or .PCIAddress .ProductId .DeviceState }}
           selectors:
+          {{- if .PCIAddress }}
           - cel:
               expression: |-
                 device.attributes["spyre.ibm.com"].pciAddress == "{{ .PCIAddress }}"
           {{- else if .ProductId }}
-          selectors:
           - cel:
               expression: |-
                 device.attributes["spyre.ibm.com"].productId == "{{ .ProductId }}"
+          {{- end}}
+          {{- if .DeviceState }}
+          - cel:
+              expression: |-
+                device.attributes["spyre.ibm.com"].deviceState == "{{ .DeviceState }}"
+          {{- end}}
           {{- end}}
       {{- if .MatchAttribute }}
       constraints:
@@ -101,6 +107,7 @@ type ResourceClaimTemplateData struct {
 	Count           int
 	PCIAddress      string
 	ProductId       string
+	DeviceState     string
 	MatchAttribute  string
 	DeviceClassName string
 }
@@ -136,6 +143,14 @@ func (c *ResourceClaimTemplateData) SetProductId(productId string) *ResourceClai
 	} else {
 		c.DeviceClassName = pfDeviceClassName
 	}
+	return c
+}
+
+// SetDeviceState adds a selector that only matches devices whose deviceState
+// attribute equals state (e.g. "ONLINE"). It is applied in addition to the
+// pciAddress/productId selector.
+func (c *ResourceClaimTemplateData) SetDeviceState(state string) *ResourceClaimTemplateData {
+	c.DeviceState = state
 	return c
 }
 

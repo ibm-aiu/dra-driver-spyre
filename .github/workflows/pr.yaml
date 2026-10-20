@@ -23,7 +23,7 @@ jobs:
   kind-e2e-test:
     needs: unit-test
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
-    uses: ibm-aiu/dra-driver-spyre/.github/workflows/e2e-test-kind.yaml@main
+    uses: ./.github/workflows/e2e-test-kind.yaml
     with:
       node_image: kindest/node:v1.35.0
   e2e-test:

@@ -37,11 +37,13 @@ import (
 var _ kubeletplugin.DRAPlugin = &driver{}
 
 type driver struct {
-	client      coreclientset.Interface
-	helper      *kubeletplugin.Helper
-	state       *state.DeviceState
-	healthcheck *health.HealthCheck
-	cancelCtx   func(error)
+	client        coreclientset.Interface
+	helper        *kubeletplugin.Helper
+	state         *state.DeviceState
+	healthcheck   *health.HealthCheck
+	deviceHealthy *health.DeviceHealthMonitor
+	nodeName      string
+	cancelCtx     func(error)
 }
 
 // NewDriver creates a driver with device state and kubelet plugin
@@ -85,28 +87,54 @@ func NewDriver(ctx context.Context, config *flags.Config) (*driver, error) {
 		}
 	}
 
-	devices := make([]resourceapi.Device, 0, len(state.Allocatable))
-	for _, device := range state.Allocatable {
-		devices = append(devices, device.Device)
-	}
-	var resources resourceslice.DriverResources
-	resources.Pools = map[string]resourceslice.Pool{
-		config.Flags.NodeName: {
-			Slices: []resourceslice.Slice{{
-				Devices: devices,
-			},
-			},
-		},
-	}
-
-	if err := helper.PublishResources(ctx, resources); err != nil {
+	driver.nodeName = config.Flags.NodeName
+	if err := driver.publishResources(ctx); err != nil {
 		return nil, err
 	}
+
+	// Device health is optional: it is enabled only when the spyre health service is configured.
+	// It starts after the first publish so that health updates always republish on top of it.
+	monitor, err := health.NewDeviceHealthMonitor(state.Allocatable, driver.onDeviceHealthChanged)
+	if err != nil {
+		klog.Infof("Spyre device health monitoring is disabled: %v", err)
+		return driver, nil
+	}
+	if err := monitor.Start(ctx); err != nil {
+		return nil, fmt.Errorf("start device health monitor: %w", err)
+	}
+	driver.deviceHealthy = monitor
 
 	return driver, nil
 }
 
+// publishResources publishes the allocatable devices, including their current device state attribute.
+func (d *driver) publishResources(ctx context.Context) error {
+	var resources resourceslice.DriverResources
+	resources.Pools = map[string]resourceslice.Pool{
+		d.nodeName: {
+			Slices: []resourceslice.Slice{{
+				Devices: d.state.Devices(),
+			}},
+		},
+	}
+	return d.helper.PublishResources(ctx, resources)
+}
+
+// onDeviceHealthChanged reflects the reported device health into the device state attribute
+// and republishes the ResourceSlice if any value changed.
+func (d *driver) onDeviceHealthChanged(ctx context.Context, healths map[string]health.DeviceHealthState) {
+	if !d.state.UpdateDeviceStates(health.StateNames(healths)) {
+		return
+	}
+	if err := d.publishResources(ctx); err != nil {
+		klog.ErrorS(err, "failed to republish resources after device state change")
+	}
+}
+
 func (d *driver) Shutdown(logger klog.Logger) error {
+	if d.deviceHealthy != nil {
+		d.deviceHealthy.Stop()
+	}
 	if d.healthcheck != nil {
 		d.healthcheck.Stop(logger)
 	}

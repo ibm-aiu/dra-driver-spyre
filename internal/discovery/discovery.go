@@ -16,6 +16,7 @@ package discovery
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/topology"
@@ -23,7 +24,6 @@ import (
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/types"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/utils"
 	"github.com/jaypipes/ghw"
-	"golang.org/x/exp/slices"
 	klog "k8s.io/klog/v2"
 )
 
