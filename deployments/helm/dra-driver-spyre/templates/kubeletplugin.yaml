@@ -89,6 +89,10 @@ spec:
         {{- with .Values.kubeletPlugin.containers.plugin.extraEnv }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
+        {{- if .Values.kubeletPlugin.containers.plugin.cardManagementEnabled }}
+        - name: CARD_MANAGEMENT_ENABLED
+          value: "1"
+        {{- end }}
         volumeMounts:
         - name: plugins-registry
           mountPath: {{ .Values.kubeletPlugin.kubeletRegistrarDirectoryPath | quote }}

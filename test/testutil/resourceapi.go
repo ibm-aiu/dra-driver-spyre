@@ -34,7 +34,7 @@ const (
 	VfProductId   = "06a8"
 
 	pfDeviceClassName = "spyre-pf"
-	vfDeviceClassName = "spyre-standard-vf"
+	vfDeviceClassName = "spyre-vf"
 
 	// Bare attribute key names as stored in the ResourceSlice map (no domain prefix).
 	pciAddressAttribute = "pciAddress"
@@ -135,7 +135,7 @@ func (c *ResourceClaimTemplateData) SetPCIAddressSelector(pciAddress string) *Re
 }
 
 // SetProductId sets productId in selector, and switches the DeviceClass
-// (spyre-pf vs spyre-standard-vf) to match
+// (spyre-pf vs spyre-vf) to match
 func (c *ResourceClaimTemplateData) SetProductId(productId string) *ResourceClaimTemplateData {
 	c.ProductId = productId
 	if productId == VfProductId {
@@ -178,7 +178,7 @@ func (c *ResourceClaimTemplateData) SetPfTierAllocation(tier int) *ResourceClaim
 }
 
 // SetVfTierAllocation configures the claim for VF topology-aware allocation at the
-// given tier (0, 1, or 2).  It selects the spyre-standard-vf DeviceClass and sets
+// given tier (0, 1, or 2).  It selects the spyre-vf DeviceClass and sets
 // the matchAttribute so the scheduler must pick devices from the same tier group.
 func (c *ResourceClaimTemplateData) SetVfTierAllocation(tier int) *ResourceClaimTemplateData {
 	c.DeviceClassName = vfDeviceClassName

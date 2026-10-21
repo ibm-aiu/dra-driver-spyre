@@ -15,8 +15,14 @@
 package discovery
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/ibm-aiu/dra-driver-spyre/pkg/types"
+	"github.com/ibm-aiu/dra-driver-spyre/pkg/utils"
+	"github.com/jaypipes/ghw"
 )
 
 var _ = Describe("main functions", func() {
@@ -37,3 +43,35 @@ var _ = Describe("main functions", func() {
 	})
 
 })
+
+var _ = DescribeTable("managed attribute",
+	func(cardMgmtEnabled bool, pciAddr string, productID types.ProductID, wantPresent bool, wantVal bool) {
+		if cardMgmtEnabled {
+			os.Setenv("CARD_MANAGEMENT_ENABLED", "1")
+		} else {
+			os.Unsetenv("CARD_MANAGEMENT_ENABLED")
+		}
+		DeferCleanup(os.Unsetenv, "CARD_MANAGEMENT_ENABLED")
+
+		devName := utils.PciAddressToDeviceName(pciAddr)
+		devices := types.NewAllocatableDevices([]*ghw.PCIDevice{
+			types.GeneratePseudoDevice(pciAddr, productID, 0),
+		}, nil, false)
+
+		attr, present := devices[devName].Attributes[types.ManagedAttribute]
+		Expect(present).To(Equal(wantPresent))
+		if wantPresent {
+			Expect(*attr.BoolValue).To(Equal(wantVal))
+		}
+	},
+	// card management disabled — managed attribute must never appear
+	Entry("disabled, PF 06a7 .0  → no managed attr", false, "0000:1a:00.0", types.ProductIDPf, false, false),
+	Entry("disabled, VF 06a8 .1  → no managed attr", false, "0000:1a:00.1", types.ProductIDVf, false, false),
+	Entry("disabled, VF 06a8 .0  → no managed attr", false, "0000:1a:00.0", types.ProductIDVf, false, false), // s390x devices
+	// card management enabled — PF always managed
+	Entry("enabled,  PF 06a7 .0  → managed=true", true, "0000:1a:00.0", types.ProductIDPf, true, true),
+	// card management enabled — VF .1 is managed
+	Entry("enabled,  VF 06a8 .1  → managed=true", true, "0000:1a:00.1", types.ProductIDVf, true, true),
+	// card management enabled — VF at other function index is NOT managed
+	Entry("enabled,  VF 06a8 .2  → no managed attr", true, "0000:1a:00.2", types.ProductIDVf, false, false),
+)

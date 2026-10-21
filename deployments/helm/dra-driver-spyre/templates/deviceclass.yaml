@@ -1,6 +1,6 @@
 ---
-# spyre-pf: PF (.0) devices visible only when VF is enabled.
-# Restricted to privileged namespaces (e.g. spyre-operator) by spyre-webhook-validator.
+# spyre-pf: PF (productId 06a7) devices without card management.
+# Generally available for users.
 apiVersion: resource.k8s.io/v1
 kind: DeviceClass
 metadata:
@@ -10,34 +10,51 @@ spec:
   - cel:
       expression: >
         device.driver == 'spyre.ibm.com' &&
-        device.attributes["spyre.ibm.com"].pciFunctionIndex == 0 &&
-        device.attributes["spyre.ibm.com"].vfEnabled == true
+        device.attributes["spyre.ibm.com"].productId == "06a7" &&
+        (!has(device.attributes["spyre.ibm.com"].managed) ||
+          device.attributes["spyre.ibm.com"].managed == false)
 ---
-# spyre-privileged-vf: first VF (.1) per PF.
-# Not published when VF is disabled, so this class is effectively static in that state.
-# Restricted to privileged namespaces by spyre-webhook-validator.
+# spyre-vf: VF (productId 06a8) devices without card management.
+# Generally available for users.
 apiVersion: resource.k8s.io/v1
 kind: DeviceClass
 metadata:
-  name: spyre-privileged-vf
+  name: spyre-vf
 spec:
   selectors:
   - cel:
       expression: >
         device.driver == 'spyre.ibm.com' &&
-        device.attributes["spyre.ibm.com"].pciFunctionIndex == 1
+        device.attributes["spyre.ibm.com"].productId == "06a8" &&
+        (!has(device.attributes["spyre.ibm.com"].managed) ||
+          device.attributes["spyre.ibm.com"].managed == false)
 ---
-# spyre-standard-vf: all devices not matched by spyre-pf or spyre-privileged-vf.
-# Includes .0 devices when VF is disabled. No namespace restriction.
+# spyre-managed-pf: PF (productId 06a7) devices with card management enabled.
+# Restricted to privileged namespaces (e.g. spyre-operator).
 apiVersion: resource.k8s.io/v1
 kind: DeviceClass
 metadata:
-  name: spyre-standard-vf
+  name: spyre-managed-pf
 spec:
   selectors:
   - cel:
       expression: >
         device.driver == 'spyre.ibm.com' &&
-        device.attributes["spyre.ibm.com"].pciFunctionIndex != 1 &&
-        !(device.attributes["spyre.ibm.com"].pciFunctionIndex == 0 &&
-          device.attributes["spyre.ibm.com"].vfEnabled == true)
+        device.attributes["spyre.ibm.com"].productId == "06a7" &&
+        has(device.attributes["spyre.ibm.com"].managed) &&
+        device.attributes["spyre.ibm.com"].managed == true
+---
+# spyre-managed-vf: VF (productId 06a8) devices with card management enabled.
+# Restricted to privileged namespaces (e.g. spyre-operator).
+apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: spyre-managed-vf
+spec:
+  selectors:
+  - cel:
+      expression: >
+        device.driver == 'spyre.ibm.com' &&
+        device.attributes["spyre.ibm.com"].productId == "06a8" &&
+        has(device.attributes["spyre.ibm.com"].managed) &&
+        device.attributes["spyre.ibm.com"].managed == true
