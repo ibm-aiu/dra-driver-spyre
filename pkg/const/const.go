@@ -27,8 +27,9 @@ const (
 
 // Driver env key/value
 const (
-	PseudoDeviceModeKey = "PSEUDO_DEVICE_MODE"
-	ModeEnabledValue    = "1"
+	PseudoDeviceModeKey      = "PSEUDO_DEVICE_MODE"
+	CardManagementEnabledKey = "CARD_MANAGEMENT_ENABLED"
+	ModeEnabledValue         = "1"
 
 	NodeNameEnvKey = "NODE_NAME"
 

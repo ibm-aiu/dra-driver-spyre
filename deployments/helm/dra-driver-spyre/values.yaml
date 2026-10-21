@@ -75,3 +75,6 @@ kubeletPlugin:
       extraEnv: []
       # Additional volume mounts of the plugin container.
       extraVolumeMounts: []
+      # Enable card management: stamps managed=true on PF (06a7) devices and on
+      # privileged VF (06a8, pciFunctionIndex=1) devices.
+      cardManagementEnabled: false

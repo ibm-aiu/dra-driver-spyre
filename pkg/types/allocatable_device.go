@@ -58,6 +58,8 @@ const (
 	MemoryVendorAttribute     = "memoryVendor"
 	MemorySpeedAttribute      = "memorySpeed"
 
+	ManagedAttribute = "managed"
+
 	VfNumberCapacity   = "vfNum"
 	MemorySizeCapacity = "memory"
 
@@ -178,8 +180,16 @@ func addSpyreBasicAttributes(attributes map[resourceapi.QualifiedName]resourceap
 	attributes[SubClassAttribute] = GetStringDeviceAttribute(device.GetSubClass())
 	attributes[VfIdAttribute] = GetIntDeviceAttribute(device.GetVFID())
 	attributes[NumaInfoAttribute] = GetStringDeviceAttribute(device.GetNumaInfo())
-	attributes[PciFunctionIndexAttribute] = GetIntDeviceAttribute(utils.GetPCIFunctionIndex(device.GetPciAddr()))
+	pciFunctionIndex := utils.GetPCIFunctionIndex(device.GetPciAddr())
+	attributes[PciFunctionIndexAttribute] = GetIntDeviceAttribute(pciFunctionIndex)
 	attributes[VfEnabledAttribute] = GetBoolDeviceAttribute(vfEnabled)
+	if utils.IsCardManagementEnabled() {
+		productID := device.GetProductID()
+		if productID == string(ProductIDPf) ||
+			(productID == string(ProductIDVf) && pciFunctionIndex == 1) {
+			attributes[ManagedAttribute] = GetBoolDeviceAttribute(true)
+		}
+	}
 }
 
 func addTopologyMetadata(attributes map[resourceapi.QualifiedName]resourceapi.DeviceAttribute,

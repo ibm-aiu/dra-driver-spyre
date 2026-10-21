@@ -58,6 +58,10 @@ func IsPseudoDeviceMode() bool {
 	return os.Getenv(cst.PseudoDeviceModeKey) == cst.ModeEnabledValue
 }
 
+func IsCardManagementEnabled() bool {
+	return os.Getenv(cst.CardManagementEnabledKey) == cst.ModeEnabledValue
+}
+
 // GetPfAddr returns SRIOV PF pci address if a device is VF given its pci address.
 // If device it not VF then it will return empty string
 func GetPfAddr(pciAddr string) (string, error) {
