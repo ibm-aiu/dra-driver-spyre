@@ -33,6 +33,12 @@ const (
 	DeviceTypeAttribute     = "deviceType"
 	DeviceTypeNameAttribute = "deviceTypeName"
 
+	// DeviceStateAttribute holds the device health state reported by the spyre
+	// health service (e.g. "ONLINE", "IN_ERROR"). It defaults to DeviceStateOnline
+	// and is updated while the driver is running.
+	DeviceStateAttribute = "deviceState"
+	DeviceStateOnline    = "ONLINE"
+
 	VendorAttribute           = "vendor"
 	DriverAttribute           = "driver"
 	ProductIdAttribute        = "productId"
@@ -145,6 +151,7 @@ func getAttributes(index int, spyreDevice PciDevice,
 	attributes := make(map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, 0)
 	attributes[DeviceIndexAttribute] = GetIntDeviceAttribute(index)
 	attributes[DriverVersionAttribute] = GetStringDeviceAttribute(cst.DriverVersion)
+	attributes[DeviceStateAttribute] = GetStringDeviceAttribute(DeviceStateOnline)
 
 	addSpyreBasicAttributes(attributes, spyreDevice, vfEnabled)
 	key := spyreDevice.GetPciAddr()

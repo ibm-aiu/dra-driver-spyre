@@ -49,6 +49,13 @@ kubeletPlugin:
   affinity: {}
   kubeletRegistrarDirectoryPath: /var/lib/kubelet/plugins_registry
   kubeletPluginsDirectoryPath: /var/lib/kubelet/plugins
+  # Extension points. All empty by default; used by the e2e tests to run a mock
+  # of the spyre health service next to the plugin.
+  #
+  # Additional init containers of the kubelet plugin pod (use restartPolicy: Always for sidecars).
+  extraInitContainers: []
+  # Additional volumes of the kubelet plugin pod.
+  extraVolumes: []
   containers:
     init:
       securityContext: {}
@@ -64,3 +71,7 @@ kubeletPlugin:
       pseudoDeviceMode: true
       # Never report VF support, even if VF devices are discovered on the node.
       disableVirtualFunction: false
+      # Additional environment variables of the plugin container.
+      extraEnv: []
+      # Additional volume mounts of the plugin container.
+      extraVolumeMounts: []

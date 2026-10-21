@@ -1,0 +1,64 @@
+# Values for the e2e tests of the device health attribute.
+#
+# Runs the test-only spyre health service mock (test/healthmock) as a native
+# sidecar of the kubelet plugin and points the plugin at it. The mock generates
+# a self-signed certificate and the unix socket into a shared emptyDir.
+#
+# Deployed by `make deploy-driver-health-mock`; never use outside of test clusters.
+kubeletPlugin:
+  extraVolumes:
+  - name: spyre-health
+    emptyDir: {}
+  extraInitContainers:
+  - name: spyre-health-mock
+    # Replaced by the Makefile (sed into a temporary values file) with the locally built mock image.
+    image: docker.io/spyre-operator/spyre-health-mock:latest
+    imagePullPolicy: IfNotPresent
+    # restartPolicy Always makes this a native sidecar: it starts before the
+    # plugin container, keeps running next to it, and the kubelet waits for the
+    # startupProbe before starting the plugin.
+    restartPolicy: Always
+    args:
+    - serve
+    - --dir=/var/run/spyre-health
+    # Bound to the pod IP (never a wildcard address) so the e2e test can reach
+    # the control API through the API server pod proxy.
+    - --control-addr=$(POD_IP):9090
+    env:
+    - name: POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+    ports:
+    - name: control
+      containerPort: 9090
+      protocol: TCP
+    startupProbe:
+      exec:
+        command: ["/usr/bin/spyre-health-mock", "ready", "--dir=/var/run/spyre-health"]
+      periodSeconds: 1
+      failureThreshold: 60
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1001
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: ["ALL"]
+    volumeMounts:
+    - name: spyre-health
+      mountPath: /var/run/spyre-health
+  containers:
+    plugin:
+      extraEnv:
+      - name: SPYRE_HEALTH_SOCK
+        value: /var/run/spyre-health/health.sock
+      - name: SPYRE_HEALTH_TLS_CERT_PATH
+        value: /var/run/spyre-health/tls.crt
+      - name: SPYRE_HEALTH_TLS_KEY_PATH
+        value: /var/run/spyre-health/tls.key
+      - name: SPYRE_HEALTH_TLS_CA_PATH
+        value: /var/run/spyre-health/ca.crt
+      extraVolumeMounts:
+      - name: spyre-health
+        mountPath: /var/run/spyre-health

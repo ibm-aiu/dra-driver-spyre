@@ -98,6 +98,48 @@ func NewDeviceState(config *flags.Config) (*DeviceState, error) {
 	return state, err
 }
 
+// UpdateDeviceStates sets the device state attribute of the allocatable devices
+// keyed by PCI address (devices not listed are left untouched).
+// It returns true if any attribute value changed.
+func (s *DeviceState) UpdateDeviceStates(states map[string]string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	changed := false
+	for name, device := range s.Allocatable {
+		newState, found := states[device.GetPciAddr()]
+		if !found {
+			continue
+		}
+		if current, ok := device.Attributes[types.DeviceStateAttribute]; ok && current.StringValue != nil && *current.StringValue == newState {
+			continue
+		}
+		// Copy the attribute map so slices already handed to the resourceslice controller are not mutated.
+		attributes := make(map[resourceapi.QualifiedName]resourceapi.DeviceAttribute, len(device.Attributes))
+		for k, v := range device.Attributes {
+			attributes[k] = v
+		}
+		attributes[types.DeviceStateAttribute] = types.GetStringDeviceAttribute(newState)
+		device.Attributes = attributes
+		s.Allocatable[name] = device
+		klog.Infof("Device %s state changed to %s", name, newState)
+		changed = true
+	}
+	return changed
+}
+
+// Devices returns a snapshot of the allocatable devices to be published in a ResourceSlice.
+func (s *DeviceState) Devices() []resourceapi.Device {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	devices := make([]resourceapi.Device, 0, len(s.Allocatable))
+	for _, device := range s.Allocatable {
+		devices = append(devices, *device.DeepCopy())
+	}
+	return devices
+}
+
 // SetNewCheckPoint creates an empty checkpoint file on disk.
 func (s *DeviceState) SetNewCheckPoint() error {
 	checkpoint := newCheckpoint()
