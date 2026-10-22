@@ -52,7 +52,7 @@ PYTHON          ?= python3
 PIP             ?= pip3
 CONTROLLER_GEN	?= $(LOCALBIN)/controller-gen
 ENVTEST			?= $(LOCALBIN)/setup-envtest
-GOLANGCI_LINT	?= $(LOCALBIN)/golangci-lint
+GOLANGCI_LINT	?= $(LOCALBIN)/golangci-lint-v$(GOLANGCI_LINT_VERSION)
 GOVULCHECK		?= $(LOCALBIN)/govulncheck
 GINKGO			?= $(LOCALBIN)/ginkgo
 YQ				?= $(LOCALBIN)/yq
@@ -63,7 +63,7 @@ LOGCHECK		?= $(LOCALBIN)/logcheck
 CONTROLLER_TOOLS_VERSION 	?= v0.22.0
 ENVTEST_K8S_VERSION			= 1.35
 GINKGO_VERSION 				?= v2.29.0
-GOLANGCI_LINT_VERSION 		?= 2.11.4
+GOLANGCI_LINT_VERSION 		?= 2.14.0
 YQ_VERSION 					?= v4.29.2
 HELM_VERSION				?= v4.0.0
 LOGCHECK_VERSION 			= 0.7.0
@@ -110,11 +110,12 @@ envtest: $(ENVTEST) ## Download and install setup-envtest
 $(ENVTEST):$(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.24.1
 
-GOLANGCI_LINT_INSTALL_SCRIPT ?= 'https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh'
+# Build from source so that golangci-lint matches the local Go toolchain.
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
-	test -s $(GOLANGCI_LINT) || { curl -sSfL $(GOLANGCI_LINT_INSTALL_SCRIPT) | bash -s -- -b $(LOCALBIN)  v$(GOLANGCI_LINT_VERSION); }
+	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v$(GOLANGCI_LINT_VERSION)
+	mv $(LOCALBIN)/golangci-lint $(GOLANGCI_LINT)
 
 .PHONY: logcheck-tool
 logcheck-tool: $(LOGCHECK) ## Download log check tool
