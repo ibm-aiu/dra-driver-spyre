@@ -114,7 +114,9 @@ func (cdi *CDIHandler) CreateCommonSpecFile() error {
 // CreateClaimSpecFile generates CDI spec.
 // cdi spec file is created in /var/run/cdi by default.
 // This function is called at Prepare.
-func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, productId types.ProductID, devices types.PreparedDevices) (*cdispec.Spec, error) { //nolint:lll
+// A claim may contain both PF and VF devices (e.g. card management).
+// In that case, env variables are set per product ID and the PF config is used.
+func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, devices types.PreparedDevices) (*cdispec.Spec, error) { //nolint:lll
 	specName := cdiapi.GenerateTransientSpecName(cdiVendor, cdiClass, claimUID)
 
 	spec := &cdispec.Spec{
@@ -123,13 +125,23 @@ func (cdi *CDIHandler) CreateClaimSpecFile(claimUID string, productId types.Prod
 	}
 
 	deviceIDs := GetDeviceIDs(devices)
+	pfIDs, vfIDs := splitDeviceIDsByProductID(devices)
 
-	configMounts, err := cdi.configHandler.GetConfigMetricsMount(productId, deviceIDs)
+	// PF config takes precedence when PF and VF are mixed.
+	configProductId := types.ProductIDVf
+	if len(pfIDs) > 0 {
+		configProductId = types.ProductIDPf
+	}
+	configMounts, err := cdi.configHandler.GetConfigMetricsMount(configProductId, deviceIDs)
 	if err != nil {
 		return spec, fmt.Errorf("failed to get config mounts: %w", err)
 	}
-	commonEnvs := []string{
-		GetDeviceEnvs(productId, deviceIDs),
+	commonEnvs := make([]string, 0, 2)
+	if len(pfIDs) > 0 {
+		commonEnvs = append(commonEnvs, GetDeviceEnvs(types.ProductIDPf, pfIDs))
+	}
+	if len(vfIDs) > 0 {
+		commonEnvs = append(commonEnvs, GetDeviceEnvs(types.ProductIDVf, vfIDs))
 	}
 	for i, device := range devices {
 		envs := make([]string, 0, 1)
@@ -215,6 +227,18 @@ func GetDeviceIDs(devices types.PreparedDevices) []string {
 		deviceIDs = append(deviceIDs, device.PciAddress)
 	}
 	return deviceIDs
+}
+
+// splitDeviceIDsByProductID returns PCI addresses of PF and VF devices separately.
+func splitDeviceIDsByProductID(devices types.PreparedDevices) (pfIDs, vfIDs []string) {
+	for _, device := range devices {
+		if device.ProductID == types.ProductIDVf {
+			vfIDs = append(vfIDs, device.PciAddress)
+		} else {
+			pfIDs = append(pfIDs, device.PciAddress)
+		}
+	}
+	return pfIDs, vfIDs
 }
 
 // GetDeviceEnvs returns an environment variable for the assigned devices.

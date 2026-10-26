@@ -44,7 +44,7 @@ var _ = Describe("Senlib Config", Ordered, func() {
 		It("should not remove non-zombie config", func() {
 			By("create spec")
 			claimUID := generateUID()
-			_, err := cdiHandler.CreateClaimSpecFile(claimUID, types.ProductIDPf, devices)
+			_, err := cdiHandler.CreateClaimSpecFile(claimUID, devices)
 			Expect(err).To(BeNil())
 			spec, err := cdiHandler.ReadSpec(claimUID)
 			Expect(err).To(BeNil())

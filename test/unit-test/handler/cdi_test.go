@@ -15,6 +15,8 @@
 package cdi_test
 
 import (
+	"encoding/json"
+	"os"
 	"path/filepath"
 
 	"github.com/google/uuid"
@@ -40,6 +42,7 @@ func getPreparedDevices(pciAddresses []string) types.PreparedDevices {
 		pciDevice := types.GeneratePseudoDevice(pciAddress, types.ProductIDPf, 0)
 		pseudoDevice := types.NewPseudoPciDevice(pciDevice)
 		device := &types.PreparedDevice{
+			ProductID: types.ProductIDPf,
 			Device: drapbv1.Device{
 				RequestNames: []string{""},
 				PoolName:     "",
@@ -58,12 +61,13 @@ func getPreparedDevices(pciAddresses []string) types.PreparedDevices {
 var _ = Describe("CDI", Ordered, func() {
 	var claimUID = generateUID()
 	pciAddresses := []string{"0000:1a:00.0", "0000:1c:00.0"}
+	vfPciAddresses := []string{"0000:1a:00.1", "0000:1c:00.1"}
 
 	It("prepare", func() {
 		expectedEnvs := []string{"PCIDEVICE_IBM_COM_AIU_PF=0000:1a:00.0,0000:1c:00.0"}
 		devices := getPreparedDevices(pciAddresses)
 		Expect(cdiHandler).NotTo(BeNil())
-		_, err := cdiHandler.CreateClaimSpecFile(claimUID, types.ProductIDPf, devices)
+		_, err := cdiHandler.CreateClaimSpecFile(claimUID, devices)
 		Expect(err).To(BeNil())
 		spec, err := cdiHandler.ReadSpec(claimUID)
 		Expect(err).To(BeNil())
@@ -85,6 +89,57 @@ var _ = Describe("CDI", Ordered, func() {
 		}
 		Expect(senlibMnt).ToNot(BeNil())
 		Expect(metricsMnt).ToNot(BeNil())
+	})
+
+	It("prepare with mixed PF and VF devices", func() {
+		mixedClaimUID := generateUID()
+		pfDevices := getPreparedDevices(pciAddresses)
+		vfDevices := getPreparedDevices(vfPciAddresses)
+		for _, d := range vfDevices {
+			d.ProductID = types.ProductIDVf
+		}
+		devices := append(pfDevices, vfDevices...)
+		_, err := cdiHandler.CreateClaimSpecFile(mixedClaimUID, devices)
+		Expect(err).To(BeNil())
+		DeferCleanup(cdiHandler.DeleteClaimSpec, mixedClaimUID)
+
+		spec, err := cdiHandler.ReadSpec(mixedClaimUID)
+		Expect(err).To(BeNil())
+		Expect(spec.ContainerEdits.Env).To(ConsistOf(
+			"PCIDEVICE_IBM_COM_AIU_PF=0000:1a:00.0,0000:1c:00.0",
+			"PCIDEVICE_IBM_COM_AIU_VF=0000:1a:00.1,0000:1c:00.1",
+		))
+
+		// PF config takes precedence for the mixed claim: GENERAL.doom must be false.
+		var senlibMnt *cdispec.Mount
+		for _, mnt := range spec.ContainerEdits.Mounts {
+			if mnt.ContainerPath == GetConfigContainerPath() {
+				senlibMnt = mnt
+			}
+		}
+		Expect(senlibMnt).ToNot(BeNil())
+		content, err := os.ReadFile(filepath.Join(senlibMnt.HostPath, GetConfigFileName()))
+		Expect(err).To(BeNil())
+		var cfg map[string]any
+		Expect(json.Unmarshal(content, &cfg)).To(Succeed())
+		general, ok := cfg["GENERAL"].(map[string]any)
+		Expect(ok).To(BeTrue())
+		Expect(general["doom"]).To(BeFalse())
+	})
+
+	It("prepare with VF devices only", func() {
+		vfClaimUID := generateUID()
+		devices := getPreparedDevices(vfPciAddresses)
+		for _, d := range devices {
+			d.ProductID = types.ProductIDVf
+		}
+		_, err := cdiHandler.CreateClaimSpecFile(vfClaimUID, devices)
+		Expect(err).To(BeNil())
+		DeferCleanup(cdiHandler.DeleteClaimSpec, vfClaimUID)
+
+		spec, err := cdiHandler.ReadSpec(vfClaimUID)
+		Expect(err).To(BeNil())
+		Expect(spec.ContainerEdits.Env).To(ConsistOf("PCIDEVICE_IBM_COM_AIU_VF=0000:1a:00.1,0000:1c:00.1"))
 	})
 
 	It("unprepare", func() {

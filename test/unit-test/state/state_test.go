@@ -184,6 +184,24 @@ var _ = Describe("Prepare", func() {
 		),
 	)
 
+	It("PF and VF devices in a single claim are prepared", func() {
+		s := newState(spyrePCI)
+		vfPCI := "0000:1a:00.1"
+		vfDevice := utils.PciAddressToDeviceName(vfPCI)
+		s.Allocatable[vfDevice] = types.SpyreDevice{
+			ProductID: types.ProductIDVf,
+			PciDevice: types.NewPseudoPciDevice(types.GeneratePseudoDevice(vfPCI, types.ProductIDVf, 0)),
+		}
+		claim := makeClaimWithResults(uuid.NewString(), []resourceapi.DeviceRequestAllocationResult{
+			makeResult(cst.DriverName, "pool0", spyreDevice, "pf"),
+			makeResult(cst.DriverName, "pool0", vfDevice, "vf"),
+		})
+
+		devices, err := s.Prepare(claim)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(deviceNames(devices)).To(Equal([]string{spyreDevice, vfDevice}))
+	})
+
 	It("idempotent: second Prepare call with same claim UID returns same devices", func() {
 		s := newState(spyrePCI)
 		claimUID := uuid.NewString()
