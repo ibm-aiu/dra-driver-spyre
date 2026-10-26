@@ -16,8 +16,10 @@ package discovery
 
 import (
 	"fmt"
+	"runtime"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/topology"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/topology/types/pcitopo"
@@ -32,6 +34,10 @@ const (
 	maxProductNameLen = 40
 	classIDBaseInt    = 16
 	classIDBitSize    = 64
+
+	// sriovVFArch is the architecture where SR-IOV VFs appear at function index .0
+	// rather than .1/.2, so auto-generation of .1/.2 VF pseudo-devices must be skipped.
+	sriovVFArch = "s390x"
 )
 
 var (
@@ -99,6 +105,25 @@ func (d *DeviceDiscovery) generatePseudoDevicesFromTopo(topo *pcitopo.Pcitopo) [
 	for vfAddr := range topo.SpyreVfDevices {
 		numa := lookupNuma(pseudoNumMap, vfAddr)
 		devices = append(devices, types.GeneratePseudoDevice(vfAddr, types.ProductIDVf, numa))
+	}
+	// For each PF, ensure .1 and .2 VF pseudo-devices exist.
+	// s390x VFs appear at function index .0, so skip auto-generation on that arch.
+	if runtime.GOARCH == sriovVFArch {
+		return devices
+	}
+	for _, pfAddr := range topo.GetDevices() {
+		dot := strings.LastIndex(pfAddr, ".")
+		if dot < 0 {
+			continue
+		}
+		base := pfAddr[:dot]
+		for _, funcIdx := range []string{"1", "2"} {
+			vfAddr := base + "." + funcIdx
+			if _, exists := topo.SpyreVfDevices[vfAddr]; !exists {
+				numa := lookupNuma(pseudoNumMap, pfAddr)
+				devices = append(devices, types.GeneratePseudoDevice(vfAddr, types.ProductIDVf, numa))
+			}
+		}
 	}
 	return devices
 }

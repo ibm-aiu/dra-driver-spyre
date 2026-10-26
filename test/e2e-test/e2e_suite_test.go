@@ -92,7 +92,7 @@ var _ = BeforeSuite(func() {
 	Eventually(func(g Gomega) {
 		slices := testutil.ListResourceSlices(ctx, k8sClientset)
 		g.Expect(slices).To(HaveLen(1))
-		g.Expect(slices[0].Spec.Devices).To(HaveLen(8 + 13)) // 8 PF + 13 VF pseudo devices
+		g.Expect(slices[0].Spec.Devices).To(HaveLen(8 + 13 + 16)) // 8 PF + 13 explicit VF + 16 auto-generated VF (2 per PF: .1 and .2)
 	}).WithTimeout(2 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 })
 
