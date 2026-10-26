@@ -171,11 +171,11 @@ func (s *DeviceState) Prepare(claim *resourceapi.ResourceClaim) ([]*drapbv1.Devi
 		return preparedClaims[claimUID].GetDevices(), nil
 	}
 
-	productId, preparedDevices, err := s.prepareDevices(claim)
+	preparedDevices, err := s.prepareDevices(claim)
 	if err != nil {
 		return nil, fmt.Errorf("prepare failed: %v", err)
 	}
-	if spec, err := s.CDI.CreateClaimSpecFile(claimUID, productId, preparedDevices); err != nil {
+	if spec, err := s.CDI.CreateClaimSpecFile(claimUID, preparedDevices); err != nil {
 		return nil, fmt.Errorf("unable to create CDI spec file for claim: %v", err)
 	} else {
 		klog.Infof("Create CDI spec: %v", spec)
@@ -223,12 +223,10 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 	return nil
 }
 
-func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (types.ProductID, types.PreparedDevices, error) {
+func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (types.PreparedDevices, error) {
 	if claim.Status.Allocation == nil {
-		return "", nil, fmt.Errorf("claim not yet allocated")
+		return nil, fmt.Errorf("claim not yet allocated")
 	}
-
-	var productId types.ProductID
 
 	// Walk through each device allocation and prepare it.
 	var preparedDevices types.PreparedDevices
@@ -238,17 +236,11 @@ func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (types.Pr
 		}
 		allocatableDevice, exists := s.Allocatable[result.Device]
 		if !exists {
-			return "", nil, fmt.Errorf("requested device is not allocatable: %v", result.Device)
-		}
-		if productId == "" {
-			productId = allocatableDevice.ProductID
-		} else if allocatableDevice.ProductID != productId {
-			return "", nil,
-				fmt.Errorf("requested devices are not the same type: %s, %s, please use pre-defined class",
-					productId, allocatableDevice.ProductID)
+			return nil, fmt.Errorf("requested device is not allocatable: %v", result.Device)
 		}
 		config := configapi.DefaultParams()
 		device := &types.PreparedDevice{
+			ProductID: allocatableDevice.ProductID,
 			Device: drapbv1.Device{
 				RequestNames: []string{result.Request},
 				PoolName:     result.Pool,
@@ -266,12 +258,12 @@ func (s *DeviceState) prepareDevices(claim *resourceapi.ResourceClaim) (types.Pr
 		// real driver would likely need to do some sort of hardware
 		// configuration , based on the config that has been passed in.
 		if err := device.ApplyConfig(); err != nil {
-			return "", nil, fmt.Errorf("error applying GPU config: %v", err)
+			return nil, fmt.Errorf("error applying GPU config: %v", err)
 		}
 		preparedDevices = append(preparedDevices, device)
 	}
 
-	return productId, preparedDevices, nil
+	return preparedDevices, nil
 }
 
 func (s *DeviceState) unprepareDevices(claimUID string, devices types.PreparedDevices) {

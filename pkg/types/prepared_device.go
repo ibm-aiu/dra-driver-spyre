@@ -27,6 +27,7 @@ import (
 
 type PreparedDevice struct {
 	drapbv1.Device
+	ProductID     ProductID `json:"productId,omitempty"`
 	Config        configapi.SpyreConfig
 	PciAddress    string
 	CDIDeviceSpec []*cdispec.DeviceNode
