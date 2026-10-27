@@ -124,7 +124,7 @@ Requesting 2 Spyre card within the same NUMA|:heavy_check_mark:|[Example 3](#exa
         - name: spyre
           exactly:
             exactly:
-          deviceClassName: spyre.ibm.com
+          deviceClassName: spyre-pf
             selectors:
             - cel:
               expression: |-
