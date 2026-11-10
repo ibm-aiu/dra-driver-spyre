@@ -33,25 +33,21 @@ const (
 	RISCVKey   = "RISCV"
 	SNTMCIKey  = "SNT_MCI"
 
-	MetricGeneralKey        = "general"
-	RISCVDoomKey            = "DOOM"
-	SNTMCIDCRKey            = "DCR"
-	DCRMCICTRLKey           = "MCI_CTRL"
-	BusIdKey                = "sen_bus_id"
-	EnableKey               = "enable"
-	PathKey                 = "path"
-	MultiSpyreConfigPathKey = "multi_aiu_config_path"
-	EnableRISCVKey          = "ENABLE_RISCV"
+	MetricGeneralKey = "general"
+	RISCVDoomKey     = "DOOM"
+	SNTMCIDCRKey     = "DCR"
+	DCRMCICTRLKey    = "MCI_CTRL"
+	BusIdKey         = "sen_bus_id"
+	EnableKey        = "enable"
+	PathKey          = "path"
+	EnableRISCVKey   = "ENABLE_RISCV"
 
 	resourcePoolFileName = "resource_pool"
 	defaultTemplatePath  = "/etc/senlib-config-template"
 
-	SharedMetricPath           = "/data/multi-aiu-sentientmap"
-	SharedMetricPathFormat     = "/data/sentientmap_%s"
-	SharedMultiSpyreConfigPath = "/data/multi-aiu-config"
-	LocalMetricPath            = "./sentientmap"
-	LocalMultiSpyreConfigPath  = "/tmp/testing"
-	UnknownDevice              = "unknown"
+	// WildCardLocalMetricPath is the metrics file name pattern; senlib expands %BUSID per device.
+	WildCardLocalMetricPath = "metrics.%BUSID"
+	UnknownDevice           = "unknown"
 )
 
 var (
@@ -96,16 +92,11 @@ func NewSenlibConfigGenerator() SenlibConfigGenerator {
 GenerateConfigContent generates config json file based on senlib config template file and allocated bus ids by
  1. adding bus ids to `GENERAL.sen_bus_id`.
  2. setting `METRICS.path` to a file/folder location for a process to write metrics of single/multiple Spyre(s)
-    2.1. For `METRICS.enable: true`,
-    2.1.1. For single-Spyre, set to /data/sentientmap_[bus_id]
-    2.1.2. For multi-Spyre, set to /data/multi-aiu-sentientmap
-    2.2. Otherwise, set to ./sentientmap (default value)
- 3. For multi-Spyre, setting `GENERAL.multi_aiu_config_path` to a folder for a split program to place
-    senlib_config_[rank].json
-    3.1. For `METRICS.enable: true`, setting to `/data/multi-aiu-config`
-    3.2. Otherwise, setting to `/tmp/testing` (refer to current multi-aiu script)
+    2.1. For `METRICS.enable: true`, set path to <metricsPath>/metrics.%BUSID
+    (metricsPath is the metrics container mount path, see utils.GetMetricsContainerPath)
+    2.2. Otherwise, set to metrics.%BUSID (default value)
 */
-func (g SenlibConfigGenerator) GenerateConfigContent(productId types.ProductID, busIds []string) (content []byte, err error) { //nolint:lll
+func (g SenlibConfigGenerator) GenerateConfigContent(productId types.ProductID, busIds []string, metricsPath string) (content []byte, err error) { //nolint:lll
 	// Open the JSON file
 	var file []byte
 	file, err = os.ReadFile(g.templateFilePath)
@@ -139,21 +130,9 @@ func (g SenlibConfigGenerator) GenerateConfigContent(productId types.ProductID, 
 										metricEnabled = false
 									}
 									if metricEnabled {
-										if len(busIds) <= 1 {
-											busId0 := UnknownDevice
-											if len(busIds) == 1 && busIds[0] != "" {
-												busId0 = busIds[0]
-											}
-											configMap[MetricsKey].(map[string]any)[MetricGeneralKey].(map[string]any)[PathKey] = fmt.Sprintf(SharedMetricPathFormat, busId0) //nolint:lll
-										} else if len(busIds) > 1 {
-											configMap[MetricsKey].(map[string]any)[MetricGeneralKey].(map[string]any)[PathKey] = SharedMetricPath //nolint:lll
-											configMap[GeneralKey].(map[string]any)[MultiSpyreConfigPathKey] = SharedMultiSpyreConfigPath
-										}
+										configMap[MetricsKey].(map[string]any)[MetricGeneralKey].(map[string]any)[PathKey] = filepath.Join(metricsPath, WildCardLocalMetricPath) //nolint:lll
 									} else {
-										configMap[MetricsKey].(map[string]any)[MetricGeneralKey].(map[string]any)[PathKey] = LocalMetricPath //nolint:lll
-										if len(busIds) > 1 {
-											configMap[GeneralKey].(map[string]any)[MultiSpyreConfigPathKey] = LocalMultiSpyreConfigPath
-										}
+										configMap[MetricsKey].(map[string]any)[MetricGeneralKey].(map[string]any)[PathKey] = WildCardLocalMetricPath //nolint:lll
 									}
 								}
 							} else {
@@ -163,10 +142,7 @@ func (g SenlibConfigGenerator) GenerateConfigContent(productId types.ProductID, 
 							// general key not found
 							configMap[MetricsKey].(map[string]any)[MetricGeneralKey] = map[string]any{
 								EnableKey: false,
-								PathKey:   LocalMetricPath,
-							}
-							if len(busIds) > 1 {
-								configMap[GeneralKey].(map[string]any)[MultiSpyreConfigPathKey] = LocalMultiSpyreConfigPath
+								PathKey:   WildCardLocalMetricPath,
 							}
 						}
 					} else {
@@ -177,11 +153,8 @@ func (g SenlibConfigGenerator) GenerateConfigContent(productId types.ProductID, 
 					configMap[MetricsKey] = map[string]any{
 						MetricGeneralKey: map[string]any{
 							EnableKey: false,
-							PathKey:   LocalMetricPath,
+							PathKey:   WildCardLocalMetricPath,
 						},
-					}
-					if len(busIds) > 1 {
-						configMap[GeneralKey].(map[string]any)[MultiSpyreConfigPathKey] = LocalMultiSpyreConfigPath
 					}
 				}
 				configMap = modifyRISCVContent(productId, configMap)
@@ -201,7 +174,7 @@ func (g SenlibConfigGenerator) GenerateConfigContent(productId types.ProductID, 
 }
 
 func (g SenlibConfigGenerator) GenerateConfigFile(productId types.ProductID, busIds []string, outputPath string) error { //nolint:lll
-	content, err := g.GenerateConfigContent(productId, busIds)
+	content, err := g.GenerateConfigContent(productId, busIds, utils.GetMetricsContainerPath())
 	if err != nil {
 		return err
 	}
