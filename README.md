@@ -207,9 +207,9 @@ Only two pod can be allocated. the remaining one pod should be pending.
   pod1   1/1     Running   0          16s
   pod2   0/1     Pending   0          16s
   # kubectl exec -n spyre-test3 pod0 -- cat /etc/aiu/senlib_config.json
-  {"GENERAL":{"multi_aiu_config_path":"/tmp/testing","sen_bus_id":["0000:1e:00.0","0000:1a:00.0"],"target":"SOC"} ...
+  {"GENERAL":{"sen_bus_id":["0000:1e:00.0","0000:1a:00.0"],"target":"SOC"} ...
   # kubectl exec -n spyre-test3 pod1 -- cat /etc/aiu/senlib_config.json
-  {"GENERAL":{"multi_aiu_config_path":"/tmp/testing","sen_bus_id":["0000:3d:00.0","0000:3f:00.0","0000:40:00.0"],"target":"SOC"} ...
+  {"GENERAL":{"sen_bus_id":["0000:3d:00.0","0000:3f:00.0","0000:40:00.0"],"target":"SOC"} ...
 ```
 
 > Note that pod0 and pod1 can get devices from the NUMAs differently from the above order.
@@ -224,8 +224,28 @@ After removal of pod1 (with 3 devices), the pod2 should become running.
   pod0   1/1     Running   0          8m5s
   pod2   1/1     Running   0          8m4s
   # kubectl exec -n spyre-test3 pod2 -- cat /etc/aiu/senlib_config.json
-  {"GENERAL":{"multi_aiu_config_path":"/tmp/testing","sen_bus_id":["0000:3d:00.0","0000:3f:00.0","0000:40:00.0"],"target":"SOC"} ...
+  {"GENERAL":{"sen_bus_id":["0000:3d:00.0","0000:3f:00.0","0000:40:00.0"],"target":"SOC"} ...
   ```
+
+### Metrics
+
+Each container also gets a writable metrics folder mounted from the host. The driver sets `METRICS.general.path` in `senlib_config.json` as follows:
+
+| `METRICS.general.enable` in the senlib config template | `METRICS.general.path` |
+|---|---|
+| `true` | `<metrics container path>/metrics.%BUSID` (default: `/tmp/spyre-metrics/metrics.%BUSID`) |
+| `false` or not defined | `metrics.%BUSID` |
+
+`%BUSID` is expanded by senlib for each allocated device, so single-device and multi-device pods use the same path pattern.
+
+The metrics paths can be overridden with the following environment variables of the kubelet plugin:
+
+| Environment variable | Description | Default |
+|---|---|---|
+| `SPYRE_METRIC_HOSTPATH` | Host folder under which a metrics folder is created per container | `/usr/local/etc/dra-driver-spyre/spyre-metrics` |
+| `SPYRE_METRIC_FILEPATH` | Container path where the metrics folder is mounted | `/tmp/spyre-metrics` |
+
+> `SPYRE_METRIC_HOSTPATH` and `SPYRE_METRIC_FILEPATH` replace `SENTIENT_MAP_HOSTPATH` and `SENTIENT_MAP_FILEPATH`. The old names are no longer read. The container path default changed from `/data` to `/tmp/spyre-metrics`, and `GENERAL.multi_aiu_config_path` is no longer set by the driver.
 
 ### Clean up
 

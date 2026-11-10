@@ -28,7 +28,7 @@ var (
 	defaultConfigFileName = "senlib_config.json"
 
 	defaultMetricsHostPath   = filepath.Join(deviceDriverPath, cst.SpyreMetricBaseFolderName)
-	defaultMetricsOutputPath = "/data"
+	defaultMetricsOutputPath = "/tmp/spyre-metrics"
 )
 
 func GetConfigContainerPath() string {

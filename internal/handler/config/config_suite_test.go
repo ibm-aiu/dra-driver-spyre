@@ -28,10 +28,10 @@ var (
 	PseudoBusIds        = []string{
 		"0000_00_0a.0", "0000_00_09.0",
 	}
-	ConfigContainerPath  = "/etc/aiu"
-	MetricsContainerPath = "/data"
-	WriteInfoFiles       = writeInfoFiles
-	Handler              *ConfigHandler
+	ConfigContainerPath      = "/etc/aiu"
+	TestMetricsContainerPath = "/data"
+	WriteInfoFiles           = writeInfoFiles
+	Handler                  *ConfigHandler
 )
 
 func TestConfig(t *testing.T) {

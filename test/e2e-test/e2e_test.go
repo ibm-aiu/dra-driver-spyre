@@ -17,6 +17,7 @@ package e2e_test
 import (
 	"context"
 
+	conf "github.com/ibm-aiu/dra-driver-spyre/internal/handler/config"
 	"github.com/ibm-aiu/dra-driver-spyre/test/testutil"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -50,6 +51,8 @@ var _ = Describe("e2e test", Ordered, func() {
 			if expectedPhase == v1.PodRunning {
 				allocations := testutil.CheckAndGetAllocationsFromPodLog(ctx, k8sClientset, podName, testNamespace, claimData.IsVF())
 				Expect(allocations).To(HaveLen(count))
+				By("checking metrics path in senlib config")
+				testutil.CheckSenlibMetricsPathFromPodLog(ctx, k8sClientset, podName, testNamespace, conf.WildCardLocalMetricPath)
 			}
 			By("deleting pod")
 			testutil.DeletePod(ctx, k8sClientset, podData)
@@ -99,6 +102,8 @@ var _ = Describe("e2e test", Ordered, func() {
 			if expectedPhase == v1.PodRunning {
 				allocations := testutil.CheckAndGetAllocationsFromPodLog(ctx, k8sClientset, podName, testNamespace, claimData.IsVF())
 				Expect(allocations).To(HaveLen(count))
+				By("checking metrics path in senlib config")
+				testutil.CheckSenlibMetricsPathFromPodLog(ctx, k8sClientset, podName, testNamespace, conf.WildCardLocalMetricPath)
 			}
 			By("deleting pod")
 			testutil.DeletePod(ctx, k8sClientset, podData)

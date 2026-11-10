@@ -30,12 +30,14 @@ var _ = Describe("Config", func() {
 		os.Setenv(cst.TemplatePathKey, TestTemplatePath)
 		os.Setenv(cst.ConfigHostPathKey, TestConfigHostPath)
 		os.Setenv(cst.MetricsHostPathKey, TestMetricsHostPath)
+		os.Setenv(cst.MetricsOutputPathKey, TestMetricsContainerPath)
 		var err error
 		Handler, err = InitConfigMount()
 		Expect(err).To(BeNil())
 	})
 
 	var _ = AfterEach(func() {
+		os.Unsetenv(cst.MetricsOutputPathKey)
 		err := os.RemoveAll(TestConfigHostPath)
 		Expect(err).To(BeNil())
 		err = os.RemoveAll(TestMetricsHostPath)
@@ -49,7 +51,7 @@ var _ = Describe("Config", func() {
 		checkParentHostPath(mnts[0].HostPath, TestConfigHostPath)
 		Expect(mnts[0].ContainerPath).To(BeEquivalentTo(ConfigContainerPath))
 		checkParentHostPath(mnts[1].HostPath, TestMetricsHostPath)
-		Expect(mnts[1].ContainerPath).To(BeEquivalentTo(MetricsContainerPath))
+		Expect(mnts[1].ContainerPath).To(BeEquivalentTo(TestMetricsContainerPath))
 	})
 })
 

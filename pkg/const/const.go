@@ -37,8 +37,8 @@ const (
 	OutputPathKey     = "CONFIG_FILEPATH"
 	ConfigFileNameKey = "CONFIG_FILENAME"
 
-	MetricsHostPathKey   = "SENTIENT_MAP_HOSTPATH"
-	MetricsOutputPathKey = "SENTIENT_MAP_FILEPATH"
+	MetricsHostPathKey   = "SPYRE_METRIC_HOSTPATH"
+	MetricsOutputPathKey = "SPYRE_METRIC_FILEPATH"
 
 	TemplatePathKey = "SENLIB_CONFIG_TEMPLATE_FILEPATH"
 )

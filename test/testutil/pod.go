@@ -156,6 +156,15 @@ func CheckAndGetAllocationsFromPodLog(ctx context.Context, k8sClientset *kuberne
 	return senlibConfig.General.PciAddresses
 }
 
+// CheckSenlibMetricsPathFromPodLog reads pod log of a pod running PrintSenlibConfig command
+// and checks that METRICS.general.path in the senlib config equals expectedPath.
+// With the default senlib config template (METRICS.general.enable: false),
+// the expected path is conf.WildCardLocalMetricPath.
+func CheckSenlibMetricsPathFromPodLog(ctx context.Context, k8sClientset *kubernetes.Clientset, name, namespace, expectedPath string) {
+	senlibConfig := getSenlibConfig(ctx, k8sClientset, name, namespace)
+	Expect(senlibConfig.Metric.General.Path).To(Equal(expectedPath))
+}
+
 // CheckMetricsFilesFromPodLog reads pod log of a pod running ListMetricsFiles command
 // and checks that the metrics path contains the pod name and pod namespace files.
 func CheckMetricsFilesFromPodLog(ctx context.Context, k8sClientset *kubernetes.Clientset, name, namespace string) {
