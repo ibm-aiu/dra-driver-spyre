@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -155,21 +156,35 @@ func CheckAndGetAllocationsFromPodLog(ctx context.Context, k8sClientset *kuberne
 	return senlibConfig.General.PciAddresses
 }
 
+// CheckMetricsFilesFromPodLog reads pod log of a pod running ListMetricsFiles command
+// and checks that the metrics path contains the pod name and pod namespace files.
+func CheckMetricsFilesFromPodLog(ctx context.Context, k8sClientset *kubernetes.Clientset, name, namespace string) {
+	Eventually(func(g Gomega) {
+		files := strings.Fields(getPodLog(ctx, k8sClientset, name, namespace))
+		g.Expect(files).To(ContainElements(conf.PodNameFile, conf.PodNamespaceFile))
+	}).WithTimeout(1 * time.Minute).WithPolling(5 * time.Second).Should(Succeed())
+}
+
 // GetSenlibConfig gets pod log and parses senlib config.
 func getSenlibConfig(ctx context.Context, k8sClientset *kubernetes.Clientset, name, namespace string) conf.SenlibConfig {
+	output := getPodLog(ctx, k8sClientset, name, namespace)
+	var senlibConfig conf.SenlibConfig
+	err := json.Unmarshal([]byte(output), &senlibConfig)
+	Expect(err).To(BeNil(), fmt.Sprintf("output: %s", output))
+	return senlibConfig
+}
+
+// getPodLog returns log of the app container.
+func getPodLog(ctx context.Context, k8sClientset *kubernetes.Clientset, name, namespace string) string {
 	req := k8sClientset.CoreV1().Pods(namespace).GetLogs(name, &v1.PodLogOptions{Container: "app"})
 	podLog, err := req.Stream(ctx)
 	Expect(err).To(BeNil())
+	defer podLog.Close() //nolint:errcheck
 
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, podLog)
 	Expect(err).To(BeNil())
-
-	var senlibConfig conf.SenlibConfig
-	output := buf.Bytes()
-	err = json.Unmarshal(output, &senlibConfig)
-	Expect(err).To(BeNil(), fmt.Sprintf("output: %s", string(output)))
-	return senlibConfig
+	return buf.String()
 }
 
 // CheckPodPhases checks status of multiple pods

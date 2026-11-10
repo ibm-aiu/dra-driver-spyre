@@ -16,4 +16,11 @@
 
 package testutil
 
+import "github.com/ibm-aiu/dra-driver-spyre/pkg/utils"
+
 const PrintSenlibConfig = "cat /etc/aiu/senlib_config.json;echo;tail -f /dev/null"
+
+// ListMetricsFiles returns a command that lists file names in the metrics mount path, one per line.
+func ListMetricsFiles() string {
+	return "ls -1 " + utils.GetMetricsContainerPath() + ";tail -f /dev/null"
+}
