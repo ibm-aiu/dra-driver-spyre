@@ -24,11 +24,14 @@ import (
 
 	"github.com/ibm-aiu/dra-driver-spyre/internal/discovery"
 	"github.com/ibm-aiu/dra-driver-spyre/internal/handler"
+	conf "github.com/ibm-aiu/dra-driver-spyre/internal/handler/config"
 	cst "github.com/ibm-aiu/dra-driver-spyre/pkg/const"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/flags"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/topology"
 	"github.com/ibm-aiu/dra-driver-spyre/pkg/types"
+	corev1 "k8s.io/api/core/v1"
 	resourceapi "k8s.io/api/resource/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	klog "k8s.io/klog/v2"
 	drapbv1 "k8s.io/kubelet/pkg/apis/dra/v1beta1"
@@ -175,10 +178,22 @@ func (s *DeviceState) Prepare(claim *resourceapi.ResourceClaim) ([]*drapbv1.Devi
 	if err != nil {
 		return nil, fmt.Errorf("prepare failed: %v", err)
 	}
-	if spec, err := s.CDI.CreateClaimSpecFile(claimUID, preparedDevices); err != nil {
+	spec, err := s.CDI.CreateClaimSpecFile(claimUID, preparedDevices)
+	if err != nil {
 		return nil, fmt.Errorf("unable to create CDI spec file for claim: %v", err)
+	}
+	klog.Infof("Create CDI spec: %v", spec)
+
+	if pod := getReservedPod(claim); pod != nil {
+		mntHostPaths := make([]string, 0, len(spec.ContainerEdits.Mounts))
+		for _, mnt := range spec.ContainerEdits.Mounts {
+			mntHostPaths = append(mntHostPaths, mnt.HostPath)
+		}
+		if err := conf.WritePodInfo(mntHostPaths, *pod); err != nil {
+			return nil, fmt.Errorf("unable to write pod info for claim: %v", err)
+		}
 	} else {
-		klog.Infof("Create CDI spec: %v", spec)
+		klog.Warningf("claim %s is not reserved for any pod, skip writing pod info", claimUID)
 	}
 
 	preparedClaims[claimUID] = preparedDevices
@@ -220,6 +235,17 @@ func (s *DeviceState) Unprepare(claimUID string) error {
 		return fmt.Errorf("unable to delete CDI spec file for claim: %v", err)
 	}
 
+	return nil
+}
+
+// getReservedPod returns the pod (name and namespace only) that the claim is reserved for,
+// or nil if the claim is not reserved for any pod.
+func getReservedPod(claim *resourceapi.ResourceClaim) *corev1.Pod {
+	for _, ref := range claim.Status.ReservedFor {
+		if ref.Resource == "pods" {
+			return &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: ref.Name, Namespace: claim.Namespace}}
+		}
+	}
 	return nil
 }
 

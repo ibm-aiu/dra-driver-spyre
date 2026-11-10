@@ -61,6 +61,26 @@ var _ = Describe("e2e test", Ordered, func() {
 		)
 	})
 
+	Context("pseudo mode - metrics path", func() {
+		It("should contain pod name and pod namespace files", func() {
+			ctx := context.Background()
+			claimName := "test-claim-metrics"
+			podName := "test-pod-metrics"
+			testNamespace := testutil.CreateRandomTestNamespace(ctx, k8sClientset)
+			By("deploying ResourceClaimTemplate")
+			claimData := testutil.BasicResourceClaimTemplateData(claimName, testNamespace).SetCount(1)
+			testutil.BuildResourceClaimTemplate(ctx, dynClient, discoClient, claimData)
+			By("deploying Pod listing files in metrics path")
+			podData := testutil.BasicPodTemplateData(podName, testNamespace).SetArg0(testutil.ListMetricsFiles())
+			testutil.BuildPod(ctx, dynClient, discoClient, podData, claimName)
+			testutil.CheckPodPhases(ctx, k8sClientset, []*testutil.PodTemplateData{podData}, map[v1.PodPhase]int{v1.PodRunning: 1})
+			By("checking file names in metrics path")
+			testutil.CheckMetricsFilesFromPodLog(ctx, k8sClientset, podName, testNamespace)
+			By("deleting pod")
+			testutil.DeletePod(ctx, k8sClientset, podData)
+		})
+	})
+
 	Context("pseudo mode - VF", func() {
 		DescribeTable("simple allocation", func(count int, expectedPhase v1.PodPhase) {
 			ctx := context.Background()
