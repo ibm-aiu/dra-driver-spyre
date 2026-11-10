@@ -123,12 +123,11 @@ Requesting 2 Spyre card within the same NUMA|:heavy_check_mark:|[Example 3](#exa
         requests:
         - name: spyre
           exactly:
-            exactly:
-          deviceClassName: spyre-pf
-            selectors:
-            - cel:
-              expression: |-
-                device.attributes["spyre.ibm.com"].pciAddress == "0000:1a:00.0"
+            deviceClassName: spyre-pf
+              selectors:
+              - cel:
+                expression: |-
+                  device.attributes["spyre.ibm.com"].pciAddress == "0000:1a:00.0"
   ```
 
   [Example](./demo/kind/spyre-test2.yaml)
