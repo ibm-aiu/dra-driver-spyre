@@ -41,6 +41,17 @@ var _ = Describe("Senlib Config", Ordered, func() {
 			CheckPathExists(mnts[0].HostPath, false)
 		})
 
+		It("should remove zombie metrics whose config folder no longer exists", func() {
+			mnts = GenerateSenlibConfig(pciAddresses)
+			CheckPathExists(mnts[0].HostPath, true)
+			CheckPathExists(mnts[1].HostPath, true)
+			Expect(os.RemoveAll(mnts[0].HostPath)).To(Succeed())
+			By("clean zombie metrics")
+			err := cdiHandler.CleanZombieConfigFolders()
+			Expect(err).To(BeNil())
+			CheckPathExists(mnts[1].HostPath, false)
+		})
+
 		It("should not remove non-zombie config", func() {
 			By("create spec")
 			claimUID := generateUID()

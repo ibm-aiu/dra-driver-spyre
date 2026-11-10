@@ -18,6 +18,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -260,7 +261,10 @@ func GetDeviceEnvs(productId types.ProductID, deviceIDs []string) string {
 	return fmt.Sprintf("%s=%s", key, values)
 }
 
-// CleanZombieConfigFolders removes all config file path those are not referred in CDI specs.
+// CleanZombieConfigFolders removes all config and metrics folders (named by unique ID)
+// that are not referred in any CDI spec, i.e., not used by any running pod.
+// Each of the config and metrics base folders is checked independently
+// so that an orphan in one folder is removed even if its counterpart is already gone.
 func (cdi *CDIHandler) CleanZombieConfigFolders() error {
 	existingMounts := make(map[string]bool)
 	// Walk through the directory
@@ -287,23 +291,38 @@ func (cdi *CDIHandler) CleanZombieConfigFolders() error {
 	if err != nil {
 		return err
 	}
-	configHostPath := utils.GetConfigHostPath()
-	metricsHostPath := utils.GetMetricsHostPath()
 	klog.Infof("existing mount path: %v", existingMounts)
-	generatedConfigEntries, err := os.ReadDir(configHostPath)
-	klog.Infof("host configs: %v", generatedConfigEntries)
-	if err != nil {
-		return err
+	// Collect unique IDs referred by specs from either config or metrics mount.
+	inUseIDs := make(map[string]bool, len(existingMounts))
+	for mntPath := range existingMounts {
+		inUseIDs[filepath.Base(mntPath)] = true
 	}
-	for _, entry := range generatedConfigEntries {
-		fullPath := filepath.Join(configHostPath, entry.Name())
-		metricsPath := filepath.Join(metricsHostPath, entry.Name())
-		if _, found := existingMounts[fullPath]; !found {
-			deleteMountedPath(fullPath)
-			deleteMountedPath(metricsPath)
+	var errs []error
+	for _, baseHostPath := range []string{utils.GetConfigHostPath(), utils.GetMetricsHostPath()} {
+		if err := cleanUnusedFolders(baseHostPath, inUseIDs); err != nil {
+			errs = append(errs, err)
 		}
 	}
-	return err
+	return errors.Join(errs...)
+}
+
+// cleanUnusedFolders removes sub-folders of baseHostPath whose name is not in inUseIDs.
+func cleanUnusedFolders(baseHostPath string, inUseIDs map[string]bool) error {
+	entries, err := os.ReadDir(baseHostPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	klog.Infof("host folders in %s: %v", baseHostPath, entries)
+	for _, entry := range entries {
+		if inUseIDs[entry.Name()] {
+			continue
+		}
+		deleteMountedPath(filepath.Join(baseHostPath, entry.Name()))
+	}
+	return nil
 }
 
 // DeleteConfigFile removes generated senlig config file.
