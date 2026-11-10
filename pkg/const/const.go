@@ -45,8 +45,8 @@ const (
 
 // Driver host paths
 const (
-	SpyreConfigBaseFolderName = "container-config"
-	SpyreMetricBaseFolderName = "container-metrics"
+	SpyreConfigBaseFolderName = "spyre-config"
+	SpyreMetricBaseFolderName = "spyre-metrics"
 )
 
 // Container-related constants
