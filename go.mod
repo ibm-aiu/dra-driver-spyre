@@ -6,7 +6,7 @@ require (
 	github.com/golang/glog v1.2.5
 	github.com/google/uuid v1.6.0
 	github.com/ibm-aiu/spyre-health-checker v1.4.0
-	github.com/jaypipes/ghw v0.26.0
+	github.com/jaypipes/ghw v0.27.0
 	github.com/jaypipes/pcidb v1.1.1
 	github.com/onsi/ginkgo/v2 v2.29.0
 	github.com/onsi/gomega v1.44.0
