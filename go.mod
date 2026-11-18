@@ -1,6 +1,6 @@
 module github.com/ibm-aiu/dra-driver-spyre
 
-go 1.26.7
+go 1.26.10
 
 require (
 	github.com/golang/glog v1.2.5
