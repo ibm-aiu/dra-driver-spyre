@@ -17,7 +17,7 @@ DOCKER				?= $(shell command -v podman 2> /dev/null || echo docker)
 DOCKERFILE			= $(REPO_ROOT)/Dockerfile
 DOCKER_BUILD_OPTS	?= --progress=plain
 DRIVER_NAME 		?= dra-driver-spyre
-BUILDER_IMAGE		?= registry.access.redhat.com/ubi9/go-toolset:1.26.7
+BUILDER_IMAGE		?= registry.access.redhat.com/ubi9/go-toolset:1.26.10
 MODULE				:= github.com/ibm-aiu/$(DRIVER_NAME)
 IMAGE_NAME			=  $(REGISTRY)/$(DRIVER_NAME)
 IMAGE_TAG			?= $(VERSION)
